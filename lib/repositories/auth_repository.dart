@@ -13,6 +13,6 @@ class AuthRepository {
       return AuthUser(id: 'uid-123', email: email);
     }
 
-    throw Exception('Credenciales inválidas');
+    throw Exception('Credenciales inválida');
   }
 }
