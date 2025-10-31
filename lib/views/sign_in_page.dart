@@ -89,6 +89,8 @@ class _SignInForm extends StatelessWidget {
 
     return Card(
       elevation: 8,
+      color: const Color(0xFF18181B), // Color en la Card, no en el Container
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       child: Container(
         color: const Color(0xFF18181B),
         padding: const EdgeInsets.all(32.0),
@@ -99,14 +101,13 @@ class _SignInForm extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SvgPicture.asset(
-                  'assets/images/svg/logo.svg',
-                  height: 100,
-                ),
+                SvgPicture.asset('assets/images/svg/logo.svg', height: 100),
                 const SizedBox(height: 6),
                 Text(
                   'Ingrese sus credenciales',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
@@ -115,15 +116,20 @@ class _SignInForm extends StatelessWidget {
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   style: const TextStyle(color: Colors.white),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Por favor ingrese un correo electrónico';
+                    if (value == null || value.isEmpty)
+                      return 'Por favor ingrese un correo electrónico';
                     final emailValid = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-                    if (!emailValid.hasMatch(value)) return 'Por favor ingrese un correo electrónico valido';
+                    if (!emailValid.hasMatch(value))
+                      return 'Por favor ingrese un correo electrónico valido';
                     return null;
                   },
                   decoration: InputDecoration(
                     labelText: 'Correo Electrónico',
                     labelStyle: const TextStyle(color: Colors.white),
-                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.white),
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: Colors.white,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Colors.white24),
@@ -134,7 +140,10 @@ class _SignInForm extends StatelessWidget {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white, width: 2),
+                      borderSide: const BorderSide(
+                        color: Colors.white,
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -145,14 +154,19 @@ class _SignInForm extends StatelessWidget {
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   style: const TextStyle(color: Colors.white),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Por favor ingrese una contraseña';
-                    if (value.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
+                    if (value == null || value.isEmpty)
+                      return 'Por favor ingrese una contraseña';
+                    if (value.length < 6)
+                      return 'La contraseña debe tener al menos 6 caracteres';
                     return null;
                   },
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
                     labelStyle: const TextStyle(color: Colors.white),
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.white),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: Colors.white,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Colors.white24),
@@ -163,14 +177,20 @@ class _SignInForm extends StatelessWidget {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white, width: 2),
+                      borderSide: const BorderSide(
+                        color: Colors.white,
+                        width: 2,
+                      ),
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        isPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: Colors.white,
                       ),
-                      onPressed: () => onPasswordVisibilityChanged(!isPasswordVisible),
+                      onPressed: () =>
+                          onPasswordVisibilityChanged(!isPasswordVisible),
                     ),
                   ),
                 ),
@@ -182,7 +202,9 @@ class _SignInForm extends StatelessWidget {
                       fillColor: MaterialStateProperty.all(Colors.white),
                       checkColor: MaterialStateProperty.all(Color(0xFF18181B)),
                     ),
-                    textTheme: Theme.of(context).textTheme.apply(bodyColor: Colors.white),
+                    textTheme: Theme.of(
+                      context,
+                    ).textTheme.apply(bodyColor: Colors.white),
                   ),
                   child: CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
@@ -190,7 +212,10 @@ class _SignInForm extends StatelessWidget {
                     controlAffinity: ListTileControlAffinity.leading,
                     value: rememberMe,
                     onChanged: (v) => onRememberMeChanged(v ?? false),
-                    title: const Text('Recordarme', style: TextStyle(color: Colors.white)),
+                    title: const Text(
+                      'Recordarme',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -226,7 +251,8 @@ class _SignInForm extends StatelessWidget {
                                 messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      result.errorMessage ?? 'Error desconocido',
+                                      result.errorMessage ??
+                                          'Error desconocido',
                                     ),
                                   ),
                                 );
@@ -239,11 +265,17 @@ class _SignInForm extends StatelessWidget {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text(
                               'Ingresar',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                     ),
                   ),
@@ -255,7 +287,6 @@ class _SignInForm extends StatelessWidget {
                     style: const TextStyle(color: Colors.red),
                   ),
                 const SizedBox(height: 16),
-                
               ],
             ),
           ),

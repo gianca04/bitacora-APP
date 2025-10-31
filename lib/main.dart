@@ -25,8 +25,3 @@ class MyApp extends ConsumerWidget {
     );
   }
 }
-// The `MyHomePage` and its private state were removed because the app uses
-// `GoRouter` with `ResponsiveNavBarPage` as the home route. Keeping unused
-// example widgets in `main.dart` can be confusing; define feature pages and
-// navigation in their own files instead.
-
