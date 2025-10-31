@@ -89,10 +89,18 @@ class _SignInForm extends StatelessWidget {
 
     return Card(
       elevation: 8,
-      color: const Color(0xFF18181B), // Color en la Card, no en el Container
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      // Give the card a visible border and rounded corners. We also set
+      // clipBehavior so the child is clipped to the rounded shape.
+      color: const Color(0xFF18181B),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30),
+        side: const BorderSide(color: Color.fromARGB(0, 255, 255, 255)),
+      ),
       child: Container(
-        color: const Color(0xFF18181B),
+        // Do NOT set the same background color here — let the Card paint it
+        // and keep this container transparent so the Card's rounded border
+        // and side are visible.
         padding: const EdgeInsets.all(32.0),
         constraints: const BoxConstraints(maxWidth: 420),
         child: Form(
