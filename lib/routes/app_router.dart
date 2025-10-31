@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../viewmodels/auth_viewmodel.dart';
+import '../views/app_shell.dart';
 import '../views/responsive_navbar_page.dart';
 import '../views/sign_in_page.dart';
 import '../views/about_page.dart';
@@ -24,30 +25,37 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     refreshListenable: refresh,
     routes: [
-      GoRoute(
-        path: '/',
-        name: 'home',
-        builder: (context, state) => const ResponsiveNavBarPage(),
+      // ShellRoute provides a persistent AppShell (AppBar + Drawer)
+      ShellRoute(
+        builder: (context, state, child) => AppShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            name: 'home',
+            builder: (context, state) => const ResponsiveNavBarPage(),
+          ),
+          GoRoute(
+            path: '/about',
+            name: 'about',
+            builder: (context, state) => const AboutPage(),
+          ),
+          GoRoute(
+            path: '/contact',
+            name: 'contact',
+            builder: (context, state) => const ContactPage(),
+          ),
+          GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => const SettingsPage(),
+          ),
+        ],
       ),
+      // Standalone sign-in route (doesn't include the AppShell)
       GoRoute(
         path: '/signin',
         name: 'signin',
         builder: (context, state) => const SignInPage(),
-      ),
-      GoRoute(
-        path: '/about',
-        name: 'about',
-        builder: (context, state) => const AboutPage(),
-      ),
-      GoRoute(
-        path: '/contact',
-        name: 'contact',
-        builder: (context, state) => const ContactPage(),
-      ),
-      GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => const SettingsPage(),
       ),
     ],
     redirect: (context, state) {
@@ -77,3 +85,4 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _AuthChangeNotifier extends ChangeNotifier {
   void notify() => notifyListeners();
 }
+

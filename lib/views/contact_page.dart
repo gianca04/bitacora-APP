@@ -5,9 +5,7 @@ class ContactPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Contact')),
-      body: const Center(child: Text('Contact Page')),
-    );
+    // AppShell provides the app bar and drawer; return only content.
+    return const Center(child: Text('Contact Page'));
   }
 }
