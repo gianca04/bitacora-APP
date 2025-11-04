@@ -6,6 +6,7 @@ import 'routes/app_router.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
+  
 }
 
 class MyApp extends ConsumerWidget {
