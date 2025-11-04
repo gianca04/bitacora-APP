@@ -34,7 +34,7 @@ class EmployeeService {
     DateTime? dateContract,
     DateTime? dateBirth,
     Sex? sex,
-    int? positionId,
+    String? positionId,
   }) async {
     // Validate document number format
     if (!validateDocumentNumber(documentType, documentNumber)) {
@@ -75,7 +75,7 @@ class EmployeeService {
   }
 
   /// Assign position to employee
-  Future<bool> assignPosition(Id employeeId, int positionId) async {
+  Future<bool> assignPosition(Id employeeId, String positionId) async {
     final employee = await _repository.getById(employeeId);
     if (employee == null) {
       return false;
@@ -184,7 +184,7 @@ class EmployeeService {
     String? nameQuery,
     DocumentType? documentType,
     Sex? sex,
-    int? positionId,
+    String? positionId,
     bool? active,
   }) async {
     var employees = await _repository.getAll();

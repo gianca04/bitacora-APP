@@ -48,7 +48,7 @@ class EmployeeRepository {
   }
 
   /// Get employees by position ID
-  Future<List<Employee>> getByPositionId(int positionId) async {
+  Future<List<Employee>> getByPositionId(String positionId) async {
     final isar = _isarService.instance;
     return await isar.employees
         .filter()
@@ -159,7 +159,7 @@ class EmployeeRepository {
   }
 
   /// Get count of employees by position
-  Future<int> getCountByPosition(int positionId) async {
+  Future<int> getCountByPosition(String positionId) async {
     final isar = _isarService.instance;
     return await isar.employees
         .filter()
@@ -189,7 +189,7 @@ class EmployeeRepository {
   }
 
   /// Watch employees by position (reactive)
-  Stream<List<Employee>> watchByPosition(int positionId) {
+  Stream<List<Employee>> watchByPosition(String positionId) {
     final isar = _isarService.instance;
     return isar.employees
         .filter()

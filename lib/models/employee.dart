@@ -42,7 +42,7 @@ class Employee {
 
   // Foreign key reference to position
   @Index()
-  int? positionId;
+  String? positionId;
 
   // Status
   @Index()
@@ -99,7 +99,7 @@ class Employee {
     DateTime? dateContract,
     DateTime? dateBirth,
     Sex? sex,
-    int? positionId,
+    String? positionId,
     bool? active,
     DateTime? createdAt,
     DateTime? updatedAt,

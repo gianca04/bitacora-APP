@@ -1,3 +1,4 @@
+
 import 'package:isar/isar.dart';
 
 part 'user.g.dart';
@@ -18,9 +19,6 @@ class User {
   
   DateTime? emailVerifiedAt;
   
-  // Password should be hashed before storing
-  String? password;
-  
   // User status
   @Index()
   bool isActive;
@@ -38,7 +36,6 @@ class User {
     this.name,
     this.email,
     this.emailVerifiedAt,
-    this.password,
     this.isActive = true,
     this.rememberToken,
     DateTime? createdAt,
@@ -56,7 +53,6 @@ class User {
     String? name,
     String? email,
     DateTime? emailVerifiedAt,
-    String? password,
     bool? isActive,
     String? rememberToken,
     DateTime? createdAt,
@@ -68,7 +64,6 @@ class User {
       name: name ?? this.name,
       email: email ?? this.email,
       emailVerifiedAt: emailVerifiedAt ?? this.emailVerifiedAt,
-      password: password ?? this.password,
       isActive: isActive ?? this.isActive,
       rememberToken: rememberToken ?? this.rememberToken,
       createdAt: createdAt ?? this.createdAt,

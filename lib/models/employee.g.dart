@@ -81,7 +81,7 @@ const EmployeeSchema = CollectionSchema(
     r'positionId': PropertySchema(
       id: 12,
       name: r'positionId',
-      type: IsarType.long,
+      type: IsarType.string,
     ),
     r'sex': PropertySchema(
       id: 13,
@@ -122,8 +122,8 @@ const EmployeeSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'positionId',
-          type: IndexType.value,
-          caseSensitive: false,
+          type: IndexType.hash,
+          caseSensitive: true,
         )
       ],
     ),
@@ -180,6 +180,12 @@ int _employeeEstimateSize(
   bytesCount += 3 + object.fullName.length * 3;
   bytesCount += 3 + object.lastName.length * 3;
   {
+    final value = object.positionId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.sex;
     if (value != null) {
       bytesCount += 3 + value.name.length * 3;
@@ -206,7 +212,7 @@ void _employeeSerialize(
   writer.writeString(offsets[9], object.fullName);
   writer.writeBool(offsets[10], object.hasContract);
   writer.writeString(offsets[11], object.lastName);
-  writer.writeLong(offsets[12], object.positionId);
+  writer.writeString(offsets[12], object.positionId);
   writer.writeString(offsets[13], object.sex?.name);
   writer.writeDateTime(offsets[14], object.updatedAt);
 }
@@ -230,7 +236,7 @@ Employee _employeeDeserialize(
     firstName: reader.readString(offsets[8]),
     id: id,
     lastName: reader.readString(offsets[11]),
-    positionId: reader.readLongOrNull(offsets[12]),
+    positionId: reader.readStringOrNull(offsets[12]),
     sex: _EmployeesexValueEnumMap[reader.readStringOrNull(offsets[13])],
     updatedAt: reader.readDateTimeOrNull(offsets[14]),
   );
@@ -271,7 +277,7 @@ P _employeeDeserializeProp<P>(
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
       return (_EmployeesexValueEnumMap[reader.readStringOrNull(offset)]) as P;
     case 14:
@@ -318,14 +324,6 @@ extension EmployeeQueryWhereSort on QueryBuilder<Employee, Employee, QWhere> {
   QueryBuilder<Employee, Employee, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
-    });
-  }
-
-  QueryBuilder<Employee, Employee, QAfterWhere> anyPositionId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'positionId'),
-      );
     });
   }
 
@@ -478,7 +476,7 @@ extension EmployeeQueryWhere on QueryBuilder<Employee, Employee, QWhereClause> {
   }
 
   QueryBuilder<Employee, Employee, QAfterWhereClause> positionIdEqualTo(
-      int? positionId) {
+      String? positionId) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'positionId',
@@ -488,7 +486,7 @@ extension EmployeeQueryWhere on QueryBuilder<Employee, Employee, QWhereClause> {
   }
 
   QueryBuilder<Employee, Employee, QAfterWhereClause> positionIdNotEqualTo(
-      int? positionId) {
+      String? positionId) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -519,51 +517,6 @@ extension EmployeeQueryWhere on QueryBuilder<Employee, Employee, QWhereClause> {
               includeUpper: false,
             ));
       }
-    });
-  }
-
-  QueryBuilder<Employee, Employee, QAfterWhereClause> positionIdGreaterThan(
-    int? positionId, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'positionId',
-        lower: [positionId],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<Employee, Employee, QAfterWhereClause> positionIdLessThan(
-    int? positionId, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'positionId',
-        lower: [],
-        upper: [positionId],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<Employee, Employee, QAfterWhereClause> positionIdBetween(
-    int? lowerPositionId,
-    int? upperPositionId, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'positionId',
-        lower: [lowerPositionId],
-        includeLower: includeLower,
-        upper: [upperPositionId],
-        includeUpper: includeUpper,
-      ));
     });
   }
 
@@ -1899,46 +1852,54 @@ extension EmployeeQueryFilter
   }
 
   QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdEqualTo(
-      int? value) {
+    String? value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'positionId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdGreaterThan(
-    int? value, {
+    String? value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'positionId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdLessThan(
-    int? value, {
+    String? value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'positionId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdBetween(
-    int? lower,
-    int? upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -1947,6 +1908,76 @@ extension EmployeeQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'positionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'positionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'positionId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'positionId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Employee, Employee, QAfterFilterCondition> positionIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'positionId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Employee, Employee, QAfterFilterCondition>
+      positionIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'positionId',
+        value: '',
       ));
     });
   }
@@ -2631,9 +2662,10 @@ extension EmployeeQueryWhereDistinct
     });
   }
 
-  QueryBuilder<Employee, Employee, QDistinct> distinctByPositionId() {
+  QueryBuilder<Employee, Employee, QDistinct> distinctByPositionId(
+      {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'positionId');
+      return query.addDistinctBy(r'positionId', caseSensitive: caseSensitive);
     });
   }
 
@@ -2732,7 +2764,7 @@ extension EmployeeQueryProperty
     });
   }
 
-  QueryBuilder<Employee, int?, QQueryOperations> positionIdProperty() {
+  QueryBuilder<Employee, String?, QQueryOperations> positionIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'positionId');
     });

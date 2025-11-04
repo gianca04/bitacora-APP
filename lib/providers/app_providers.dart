@@ -12,10 +12,14 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/menu_viewmodel.dart';
 import '../viewmodels/work_report_viewmodel.dart';
 import '../viewmodels/photo_viewmodel.dart';
+import '../viewmodels/user_viewmodel.dart';
+import '../viewmodels/employee_viewmodel.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/menu_controller.dart';
 import '../controllers/work_report_controller.dart';
 import '../controllers/photo_controller.dart';
+import '../controllers/user_controller.dart';
+import '../controllers/employee_controller.dart';
 
 // ============================================================================
 // SERVICE PROVIDERS
@@ -113,6 +117,20 @@ final photoViewModelProvider =
   );
 });
 
+/// Provider for User view model
+final userViewModelProvider =
+    StateNotifierProvider<UserViewModel, UserState>((ref) {
+  final repo = ref.watch(userRepositoryProvider);
+  return UserViewModel(repository: repo);
+});
+
+/// Provider for Employee view model
+final employeeViewModelProvider =
+    StateNotifierProvider<EmployeeViewModel, EmployeeState>((ref) {
+  final repo = ref.watch(employeeRepositoryProvider);
+  return EmployeeViewModel(repository: repo);
+});
+
 // ============================================================================
 // CONTROLLER PROVIDERS (Optional Layer)
 // Controllers act as facades between UI and ViewModels
@@ -137,4 +155,14 @@ final workReportControllerProvider = Provider<WorkReportController>((ref) {
 /// Provider for Photo controller
 final photoControllerProvider = Provider<PhotoController>((ref) {
   return PhotoController(ref);
+});
+
+/// Provider for User controller
+final userControllerProvider = Provider<UserController>((ref) {
+  return UserController(ref);
+});
+
+/// Provider for Employee controller
+final employeeControllerProvider = Provider<EmployeeController>((ref) {
+  return EmployeeController(ref);
 });

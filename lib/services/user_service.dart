@@ -9,30 +9,22 @@ class UserService {
 
   UserService(this._repository);
 
-  /// Authenticate user with email and password
-  /// Returns user if credentials are valid, null otherwise
-  /// Note: In production, use proper password hashing (e.g., bcrypt, argon2)
-  Future<User?> authenticate(String email, String password) async {
+  /// Get user by email (for authentication or lookup)
+  /// Returns user if found and active, null otherwise
+  Future<User?> getUserByEmail(String email) async {
     final user = await _repository.getByEmail(email);
     
     if (user == null || !user.isActive) {
       return null;
     }
     
-    // TODO: Implement proper password verification with hashing
-    // For now, direct comparison (NOT SECURE - only for development)
-    if (user.password == password) {
-      return user;
-    }
-    
-    return null;
+    return user;
   }
 
   /// Register a new user
   /// Validates email uniqueness and sets default values
   Future<Id?> register({
     required String email,
-    required String password,
     String? name,
     int? employeeId,
   }) async {
@@ -42,31 +34,14 @@ class UserService {
       return null;
     }
 
-    // TODO: Hash password before storing
-    // For production, use a package like crypto or bcrypt
     final user = User(
       email: email,
-      password: password, // Should be hashed
       name: name,
       employeeId: employeeId,
       isActive: true,
     );
 
     return await _repository.create(user);
-  }
-
-  /// Update user password
-  /// Note: Should hash the new password before storing
-  Future<bool> updatePassword(Id userId, String newPassword) async {
-    final user = await _repository.getById(userId);
-    if (user == null) {
-      return false;
-    }
-
-    // TODO: Hash password before storing
-    final updatedUser = user.copyWith(password: newPassword);
-    await _repository.update(updatedUser);
-    return true;
   }
 
   /// Link user to an employee
