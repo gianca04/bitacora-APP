@@ -12,11 +12,13 @@ import 'signature_pad_widget.dart';
 /// Single Responsibility: Handle form state and validation
 class WorkReportForm extends StatefulWidget {
   final WorkReport? workReport;
-  final Function(WorkReport report, List<Photo> photos) onSubmit;
+  final List<Photo>? existingPhotos;
+  final Function(WorkReport report, List<Photo> photos, bool photosChanged) onSubmit;
 
   const WorkReportForm({
     super.key,
     this.workReport,
+    this.existingPhotos,
     required this.onSubmit,
   });
 
@@ -42,6 +44,12 @@ class _WorkReportFormState extends State<WorkReportForm> {
   // Lista de tareas con fotos antes/después
   final List<Map<String, dynamic>> _photoTasks = [];
   
+  // Track whether user modified photos (add/delete/replace)
+  bool _photosModified = false;
+  // Track which indices have sent their initial onChanged callback so we
+  // don't mark that as a user modification.
+  final Set<int> _initialNotifiedIndices = {};
+
   // Firmas digitales
   Uint8List? _supervisorSignature;
   Uint8List? _managerSignature;
@@ -50,6 +58,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
   void initState() {
     super.initState();
     _initializeForm();
+    _loadExistingPhotos();
   }
 
   void _initializeForm() {
@@ -66,6 +75,39 @@ class _WorkReportFormState extends State<WorkReportForm> {
       _startTime = report.startTime;
       _endTime = report.endTime;
       _reportDate = report.reportDate;
+    }
+  }
+
+  void _loadExistingPhotos() {
+    // Siempre sincronizar el estado local con lo que venga en widget.existingPhotos
+    // Esto permite que, si las fotos llegan más tarde (por ejemplo desde un provider
+    // cargado de forma asíncrona), el formulario actualice la lista de tareas/fotos.
+    _photoTasks.clear();
+    if (widget.existingPhotos != null && widget.existingPhotos!.isNotEmpty) {
+      // Convertir fotos existentes a formato de _photoTasks
+      for (final photo in widget.existingPhotos!) {
+        _photoTasks.add({
+          'beforePhoto': photo.beforeWorkPhotoPath,
+          'afterPhoto': photo.photoPath,
+          'beforeDescription': photo.beforeWorkDescripcion ?? '',
+          'afterDescription': photo.descripcion ?? '',
+        });
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant WorkReportForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Si las fotos existentes cambian (por ejemplo se cargaron después),
+    // recargamos _photoTasks y actualizamos el UI.
+    if (widget.existingPhotos != oldWidget.existingPhotos) {
+      // Log temporal para debugging: confirmar que didUpdateWidget se dispara
+      debugPrint('WorkReportForm: existingPhotos changed from ${oldWidget.existingPhotos?.length ?? 0} to ${widget.existingPhotos?.length ?? 0}');
+      setState(() {
+        _loadExistingPhotos();
+      });
     }
   }
 
@@ -211,7 +253,8 @@ class _WorkReportFormState extends State<WorkReportForm> {
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: BeforeAfterPhotoCard(
-                index: entry.key + 1,
+                // Pasamos entry.key (0-based). El widget muestra +1 internamente para UX.
+                index: entry.key,
                 beforePhotoPath: entry.value['beforePhoto'] as String?,
                 afterPhotoPath: entry.value['afterPhoto'] as String?,
                 beforeDescription: entry.value['beforeDescription'] as String?,
@@ -222,6 +265,15 @@ class _WorkReportFormState extends State<WorkReportForm> {
                     _photoTasks[entry.key]['afterPhoto'] = after;
                     _photoTasks[entry.key]['beforeDescription'] = beforeDesc;
                     _photoTasks[entry.key]['afterDescription'] = afterDesc;
+
+                    // If this index has already sent its initial onChanged, treat
+                    // this callback as a user modification. Otherwise mark it as
+                    // initialized and don't count it as a modification.
+                    if (_initialNotifiedIndices.contains(entry.key)) {
+                      _photosModified = true;
+                    } else {
+                      _initialNotifiedIndices.add(entry.key);
+                    }
                   });
                 },
               ),
@@ -237,6 +289,8 @@ class _WorkReportFormState extends State<WorkReportForm> {
                   'beforeDescription': '',
                   'afterDescription': '',
                 });
+                // User explicitly added a new task => photos modified
+                _photosModified = true;
               });
             },
             icon: const Icon(Icons.add_photo_alternate),
@@ -464,7 +518,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
         }
       }
 
-      widget.onSubmit(report, photos);
+      widget.onSubmit(report, photos, _photosModified);
     }
   }
 }

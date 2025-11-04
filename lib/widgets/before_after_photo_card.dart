@@ -44,6 +44,11 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
     _afterPath = widget.afterPhotoPath;
     _beforeDesc = widget.beforeDescription;
     _afterDesc = widget.afterDescription;
+    // Notify parent of initial values so the parent state remains in sync
+    // (useful when the card is created with existing photo paths)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onChanged(_beforePath, _afterPath, _beforeDesc, _afterDesc);
+    });
   }
 
   @override
@@ -133,6 +138,7 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
     required Function(String) onDescriptionChanged,
     required Color color,
   }) {
+    final String _path = photoPath ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -152,14 +158,14 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
         const SizedBox(height: 12),
 
         // Preview de la foto o botón para tomar
-        if (photoPath != null && photoPath.isNotEmpty)
+        if (_path.isNotEmpty)
           Stack(
             children: [
               // Preview de la imagen
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.file(
-                  File(photoPath),
+                  File(_path),
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -187,6 +193,30 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
                   ),
                 ),
               ),
+              // Mostrar ruta de la imagen en una etiqueta inferior para verificación
+              if (_path.isNotEmpty)
+                Positioned(
+                  left: 8,
+                  bottom: 8,
+                  right: 56,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      _path,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ),
             ],
           )
         else

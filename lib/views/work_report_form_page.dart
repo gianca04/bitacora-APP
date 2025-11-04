@@ -9,7 +9,7 @@ import '../providers/app_providers.dart';
 import '../widgets/work_report_form.dart';
 
 /// Page for creating or editing a work report
-class WorkReportFormPage extends ConsumerWidget {
+class WorkReportFormPage extends ConsumerStatefulWidget {
   final WorkReport? workReport;
 
   const WorkReportFormPage({
@@ -18,9 +18,65 @@ class WorkReportFormPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WorkReportFormPage> createState() => _WorkReportFormPageState();
+}
+
+class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
+  List<Photo>? _existingPhotos;
+  bool _isLoadingPhotos = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cargar fotos existentes si estamos editando
+    // Usar addPostFrameCallback para evitar modificar provider durante build
+    if (widget.workReport != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadExistingPhotos();
+      });
+    }
+  }
+
+  Future<void> _loadExistingPhotos() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingPhotos = true;
+    });
+
+    try {
+      await ref.read(photoViewModelProvider.notifier)
+        .loadByWorkReportId(widget.workReport!.id);
+      
+      if (!mounted) return;
+      
+      final photoState = ref.read(photoViewModelProvider);
+      setState(() {
+        _existingPhotos = photoState.photos;
+        _isLoadingPhotos = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoadingPhotos = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar fotos: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(workReportViewModelProvider);
-    final isEditing = workReport != null;
+    final isEditing = widget.workReport != null;
 
     // Listen to state changes for navigation
     ref.listen<WorkReportState>(workReportViewModelProvider, (previous, next) {
@@ -53,25 +109,37 @@ class WorkReportFormPage extends ConsumerWidget {
         title: Text(isEditing ? 'Edit Work Report' : 'New Work Report'),
         backgroundColor: const Color(0xFF1E1E1E),
       ),
-      body: state.status == WorkReportStatus.loading
-          ? const Center(child: CircularProgressIndicator())
-          : WorkReportForm(
-              workReport: workReport,
-              onSubmit: (report, photos) => _handleSubmit(ref, report, photos, context),
-            ),
+      body: _isLoadingPhotos
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Cargando fotos...'),
+                ],
+              ),
+            )
+          : state.status == WorkReportStatus.loading
+              ? const Center(child: CircularProgressIndicator())
+              : WorkReportForm(
+                  workReport: widget.workReport,
+                  existingPhotos: _existingPhotos,
+                  onSubmit: (report, photos, photosChanged) => _handleSubmit(report, photos, photosChanged, context),
+                ),
     );
   }
 
   Future<void> _handleSubmit(
-    WidgetRef ref,
     WorkReport report,
     List<Photo> photos,
+    bool photosChanged,
     BuildContext context,
   ) async {
     try {
       final viewModel = ref.read(workReportViewModelProvider.notifier);
 
-      if (workReport == null) {
+      if (widget.workReport == null) {
         // Create new report
         final reportId = await viewModel.createReport(report);
         
@@ -97,24 +165,27 @@ class WorkReportFormPage extends ConsumerWidget {
       } else {
         // Update existing report
         await viewModel.updateReport(report);
-        
-        // Para actualización: eliminar fotos antiguas y crear nuevas
-        final photoViewModel = ref.read(photoViewModelProvider.notifier);
-        
-        // Eliminar fotos antiguas del reporte
-        await photoViewModel.deleteByWorkReportId(report.id);
-        
-        // Crear nuevas fotos
-        for (final photo in photos) {
-          await photoViewModel.createPhoto(
-            Photo(
-              workReportId: report.id,
-              photoPath: photo.photoPath,
-              descripcion: photo.descripcion,
-              beforeWorkPhotoPath: photo.beforeWorkPhotoPath,
-              beforeWorkDescripcion: photo.beforeWorkDescripcion,
-            ),
-          );
+
+        // Para actualización: si las fotos fueron modificadas por el usuario,
+        // eliminamos las antiguas y creamos las nuevas. Si no hubo cambios de
+        // fotos, preservamos las fotos existentes.
+        if (photosChanged) {
+          final photoViewModel = ref.read(photoViewModelProvider.notifier);
+          // Eliminar fotos antiguas del reporte
+          await photoViewModel.deleteByWorkReportId(report.id);
+
+          // Crear nuevas fotos
+          for (final photo in photos) {
+            await photoViewModel.createPhoto(
+              Photo(
+                workReportId: report.id,
+                photoPath: photo.photoPath,
+                descripcion: photo.descripcion,
+                beforeWorkPhotoPath: photo.beforeWorkPhotoPath,
+                beforeWorkDescripcion: photo.beforeWorkDescripcion,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
