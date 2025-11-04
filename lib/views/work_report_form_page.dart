@@ -24,6 +24,8 @@ class WorkReportFormPage extends ConsumerStatefulWidget {
 class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
   List<Photo>? _existingPhotos;
   bool _isLoadingPhotos = false;
+  // Keep the last submitted report so we can return it to the caller when pop
+  WorkReport? _submittedReport;
 
   @override
   void initState() {
@@ -78,10 +80,10 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
     final state = ref.watch(workReportViewModelProvider);
     final isEditing = widget.workReport != null;
 
-    // Listen to state changes for navigation
+    // Listen to state changes for navigation and return the submitted report
     ref.listen<WorkReportState>(workReportViewModelProvider, (previous, next) {
       if (next.status == WorkReportStatus.loaded && previous?.status == WorkReportStatus.loading) {
-        // Successfully saved, navigate back
+        // Successfully saved, navigate back and return submitted report
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -89,7 +91,7 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
               backgroundColor: Colors.green,
             ),
           );
-          context.pop();
+          context.pop(_submittedReport);
         }
       } else if (next.status == WorkReportStatus.error) {
         // Show error message
@@ -141,10 +143,14 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
 
       if (widget.workReport == null) {
         // Create new report
+        // store the submitted report so we can return it later
+        _submittedReport = report;
         final reportId = await viewModel.createReport(report);
         
         // Create associated photos if report was created successfully
         if (reportId != null) {
+          // Update submitted report id
+          _submittedReport?.id = reportId;
           final photoViewModel = ref.read(photoViewModelProvider.notifier);
           
           // Las fotos ya fueron guardadas en almacenamiento permanente 
@@ -164,12 +170,13 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
         }
       } else {
         // Update existing report
+        _submittedReport = report;
         await viewModel.updateReport(report);
 
         // Para actualización: si las fotos fueron modificadas por el usuario,
         // eliminamos las antiguas y creamos las nuevas. Si no hubo cambios de
         // fotos, preservamos las fotos existentes.
-        if (photosChanged) {
+  if (photosChanged) {
           final photoViewModel = ref.read(photoViewModelProvider.notifier);
           // Eliminar fotos antiguas del reporte
           await photoViewModel.deleteByWorkReportId(report.id);

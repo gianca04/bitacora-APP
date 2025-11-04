@@ -23,12 +23,14 @@ class WorkReportDetailPage extends ConsumerStatefulWidget {
 }
 
 class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
+  late WorkReport _report;
   @override
   void initState() {
     super.initState();
-    // Cargar las fotos del reporte
+    // Inicializar reporte mutable y cargar fotos
+    _report = widget.workReport;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(photoViewModelProvider.notifier).loadByWorkReportId(widget.workReport.id);
+      ref.read(photoViewModelProvider.notifier).loadByWorkReportId(_report.id);
     });
   }
 
@@ -47,12 +49,19 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
             onPressed: () {
               context.pushNamed(
                 'edit-report',
-                pathParameters: {'id': widget.workReport.id.toString()},
-                extra: widget.workReport,
-              ).then((_) {
-                // Recargar fotos después de editar
+                pathParameters: {'id': _report.id.toString()},
+                extra: _report,
+              ).then((value) {
+                // If the edit page returned an updated WorkReport, update local state
+                if (value is WorkReport) {
+                  setState(() {
+                    _report = value;
+                  });
+                }
+
+                // Recargar fotos después de editar (siempre)
                 ref.read(photoViewModelProvider.notifier)
-                  .loadByWorkReportId(widget.workReport.id);
+                  .loadByWorkReportId(_report.id);
               });
             },
             tooltip: 'Editar reporte',
@@ -123,7 +132,7 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.workReport.name,
+                        _report.name,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -131,7 +140,7 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Reporte #${widget.workReport.id}',
+                        'Reporte #${_report.id}',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -146,19 +155,19 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
             _buildInfoRow(
               icon: Icons.work_outline,
               label: 'Descripción',
-              value: widget.workReport.description,
+              value: _report.description,
             ),
             const SizedBox(height: 12),
             _buildInfoRow(
               icon: Icons.person_outline,
               label: 'Empleado',
-              value: 'ID: ${widget.workReport.employeeId}',
+              value: 'ID: ${_report.employeeId}',
             ),
             const SizedBox(height: 12),
             _buildInfoRow(
               icon: Icons.folder_outlined,
               label: 'Proyecto',
-              value: 'ID: ${widget.workReport.projectId}',
+              value: 'ID: ${_report.projectId}',
             ),
           ],
         ),
