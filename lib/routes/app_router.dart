@@ -99,21 +99,33 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       final authState = ref.read(authViewModelProvider);
-      final loggingIn = state.location == '/signin';
+      final isSignInPage = state.matchedLocation == '/signin';
 
-      // If the user is not authenticated, send them to /signin unless
-      // they're already on the sign-in page.
-      if (authState.status != AuthStatus.authenticated && !loggingIn) {
+      // During initial load, allow navigation to complete
+      // The main.dart will handle checking auth status
+      if (authState.status == AuthStatus.initial) {
+        // If trying to access protected routes during initial load,
+        // redirect to signin temporarily (will be corrected by checkAuthStatus)
+        return isSignInPage ? null : '/signin';
+      }
+
+      // If user is authenticated
+      if (authState.status == AuthStatus.authenticated) {
+        // Redirect authenticated users away from signin page
+        if (isSignInPage) {
+          return '/';
+        }
+        // Allow access to all other pages
+        return null;
+      }
+
+      // If user is not authenticated (unauthenticated or error state)
+      if (!isSignInPage) {
+        // Redirect to signin page
         return '/signin';
       }
 
-      // If the user is authenticated and tries to go to the sign-in page,
-      // send them to the home page.
-      if (authState.status == AuthStatus.authenticated && loggingIn) {
-        return '/';
-      }
-
-      // No redirect
+      // Already on signin page and not authenticated - allow access
       return null;
     },
   );

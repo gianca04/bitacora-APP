@@ -122,7 +122,7 @@ class AppShell extends ConsumerWidget {
                               break;
                             case 'sign out':
                               controller.selectMenu(entry.key);
-                              ref.read(authControllerProvider).signOut();
+                              ref.read(authControllerProvider).signOut(context);
                               scaffoldKey.currentState?.openEndDrawer();
                               context.go('/signin');
                               break;
@@ -170,7 +170,7 @@ class AppShell extends ConsumerWidget {
                       break;
                     case 'sign out':
                       controller.selectMenu(entry.key);
-                      ref.read(authControllerProvider).signOut();
+                      ref.read(authControllerProvider).signOut(context);
                       context.go('/signin');
                       break;
                     default:

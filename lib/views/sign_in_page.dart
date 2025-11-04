@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 import '../viewmodels/auth_viewmodel.dart'; // For AuthStatus enum
 import '../providers/app_providers.dart';
@@ -241,29 +242,16 @@ class _SignInForm extends StatelessWidget {
                         ? null
                         : () async {
                             if (formKey.currentState?.validate() ?? false) {
-                              final messenger = ScaffoldMessenger.of(context);
-
-                              final result = await controller.signIn(
+                              final success = await controller.signIn(
+                                context: context,
                                 email: emailController.text.trim(),
                                 password: passwordController.text,
                                 rememberMe: rememberMe,
                               );
 
-                              if (result.status == AuthStatus.authenticated) {
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Inicio de sesión exitoso'),
-                                  ),
-                                );
-                              } else if (result.status == AuthStatus.error) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      result.errorMessage ??
-                                          'Error desconocido',
-                                    ),
-                                  ),
-                                );
+                              // Navigate to home page after successful login
+                              if (success && context.mounted) {
+                                context.go('/');
                               }
                             }
                           },
