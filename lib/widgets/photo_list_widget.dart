@@ -161,13 +161,15 @@ class PhotoListWidget extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
 
-              // Foto DESPUÉS (principal)
-              _buildPhotoSection(
-                title: '✅ DESPUÉS del trabajo',
-                photoPath: photo.photoPath,
-                description: photo.descripcion,
-                color: Colors.green,
-              ),
+              // Foto DESPUÉS (principal) - solo mostrar si existe
+              if (photo.photoPath != null && photo.photoPath!.isNotEmpty) ...[
+                _buildPhotoSection(
+                  title: '✅ DESPUÉS del trabajo',
+                  photoPath: photo.photoPath!,
+                  description: photo.descripcion,
+                  color: Colors.green,
+                ),
+              ],
 
               // Metadata
               const SizedBox(height: 12),

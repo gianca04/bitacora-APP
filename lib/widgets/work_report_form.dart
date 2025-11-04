@@ -79,20 +79,42 @@ class _WorkReportFormState extends State<WorkReportForm> {
   }
 
   void _loadExistingPhotos() {
-    // Siempre sincronizar el estado local con lo que venga en widget.existingPhotos
-    // Esto permite que, si las fotos llegan más tarde (por ejemplo desde un provider
-    // cargado de forma asíncrona), el formulario actualice la lista de tareas/fotos.
+    // Sincronizar el estado local con widget.existingPhotos
+    // Esto permite que las fotos cargadas asincrónicamente actualicen el formulario
+    debugPrint('📦 WorkReportForm._loadExistingPhotos called');
+    debugPrint('   existingPhotos count: ${widget.existingPhotos?.length ?? 0}');
+    
+    // Don't clear if we're just reloading the same data
+    final shouldReload = widget.existingPhotos != null && 
+                         widget.existingPhotos!.isNotEmpty &&
+                         (_photoTasks.isEmpty || 
+                          _photoTasks.length != widget.existingPhotos!.length);
+    
+    if (!shouldReload && _photoTasks.isNotEmpty) {
+      debugPrint('   ⏭️ Skipping reload - data unchanged');
+      return;
+    }
+    
     _photoTasks.clear();
+    _initialNotifiedIndices.clear();
+    
     if (widget.existingPhotos != null && widget.existingPhotos!.isNotEmpty) {
       // Convertir fotos existentes a formato de _photoTasks
       for (final photo in widget.existingPhotos!) {
+        debugPrint('   Loading photo: afterPath=${photo.photoPath}, beforePath=${photo.beforeWorkPhotoPath}');
         _photoTasks.add({
           'beforePhoto': photo.beforeWorkPhotoPath,
           'afterPhoto': photo.photoPath,
           'beforeDescription': photo.beforeWorkDescripcion ?? '',
           'afterDescription': photo.descripcion ?? '',
+          // Store original paths to compare later
+          'originalBeforePhoto': photo.beforeWorkPhotoPath,
+          'originalAfterPhoto': photo.photoPath,
         });
       }
+      debugPrint('   ✅ Loaded ${_photoTasks.length} photo tasks');
+    } else {
+      debugPrint('   ℹ️ No existing photos to load');
     }
   }
 
@@ -100,14 +122,21 @@ class _WorkReportFormState extends State<WorkReportForm> {
   void didUpdateWidget(covariant WorkReportForm oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Si las fotos existentes cambian (por ejemplo se cargaron después),
-    // recargamos _photoTasks y actualizamos el UI.
+    // Solo recargar si las fotos existentes realmente cambiaron
     if (widget.existingPhotos != oldWidget.existingPhotos) {
-      // Log temporal para debugging: confirmar que didUpdateWidget se dispara
-      debugPrint('WorkReportForm: existingPhotos changed from ${oldWidget.existingPhotos?.length ?? 0} to ${widget.existingPhotos?.length ?? 0}');
-      setState(() {
-        _loadExistingPhotos();
-      });
+      final oldCount = oldWidget.existingPhotos?.length ?? 0;
+      final newCount = widget.existingPhotos?.length ?? 0;
+      
+      debugPrint('WorkReportForm: existingPhotos changed from $oldCount to $newCount');
+      
+      // Only reload if counts are different or if we're going from null to data
+      if (oldCount != newCount || (oldCount == 0 && newCount > 0)) {
+        setState(() {
+          _loadExistingPhotos();
+        });
+      } else {
+        debugPrint('   ⏭️ Same count, skipping reload');
+      }
     }
   }
 
@@ -261,17 +290,34 @@ class _WorkReportFormState extends State<WorkReportForm> {
                 afterDescription: entry.value['afterDescription'] as String?,
                 onChanged: (before, after, beforeDesc, afterDesc) {
                   setState(() {
+                    // Debug: verificar qué valores llegan
+                    debugPrint('📸 Photo task ${entry.key} onChanged:');
+                    debugPrint('  beforePhoto: $before');
+                    debugPrint('  afterPhoto: $after');
+                    debugPrint('  Original beforePhoto: ${_photoTasks[entry.key]['originalBeforePhoto']}');
+                    debugPrint('  Original afterPhoto: ${_photoTasks[entry.key]['originalAfterPhoto']}');
+                    
                     _photoTasks[entry.key]['beforePhoto'] = before;
                     _photoTasks[entry.key]['afterPhoto'] = after;
                     _photoTasks[entry.key]['beforeDescription'] = beforeDesc;
                     _photoTasks[entry.key]['afterDescription'] = afterDesc;
 
-                    // If this index has already sent its initial onChanged, treat
-                    // this callback as a user modification. Otherwise mark it as
-                    // initialized and don't count it as a modification.
+                    // Check if photo paths actually changed (not just descriptions)
+                    final originalBefore = _photoTasks[entry.key]['originalBeforePhoto'] as String?;
+                    final originalAfter = _photoTasks[entry.key]['originalAfterPhoto'] as String?;
+                    
+                    // If this index has already sent its initial onChanged, check if
+                    // the actual photo paths changed (indicating a photo replacement)
                     if (_initialNotifiedIndices.contains(entry.key)) {
-                      _photosModified = true;
+                      // Mark as modified only if photo paths changed
+                      if (before != originalBefore || after != originalAfter) {
+                        debugPrint('  🔄 Photos modified detected!');
+                        _photosModified = true;
+                      } else {
+                        debugPrint('  ✅ Only descriptions changed, photos preserved');
+                      }
                     } else {
+                      debugPrint('  📥 Initial notification');
                       _initialNotifiedIndices.add(entry.key);
                     }
                   });
@@ -288,6 +334,9 @@ class _WorkReportFormState extends State<WorkReportForm> {
                   'afterPhoto': null,
                   'beforeDescription': '',
                   'afterDescription': '',
+                  // New tasks have no original paths
+                  'originalBeforePhoto': null,
+                  'originalAfterPhoto': null,
                 });
                 // User explicitly added a new task => photos modified
                 _photosModified = true;
@@ -499,24 +548,50 @@ class _WorkReportFormState extends State<WorkReportForm> {
 
       // Convertir photoTasks a lista de Photo objetos
       final photos = <Photo>[];
-      for (var task in _photoTasks) {
+      debugPrint('🔍 Converting photoTasks to Photo objects:');
+      debugPrint('  Total photoTasks: ${_photoTasks.length}');
+      debugPrint('  photosModified flag: $_photosModified');
+      
+      for (var i = 0; i < _photoTasks.length; i++) {
+        final task = _photoTasks[i];
         final beforePath = task['beforePhoto'] as String?;
         final afterPath = task['afterPhoto'] as String?;
+        final originalBeforePath = task['originalBeforePhoto'] as String?;
+        final originalAfterPath = task['originalAfterPhoto'] as String?;
         final beforeDesc = task['beforeDescription'] as String?;
         final afterDesc = task['afterDescription'] as String?;
 
-        // Solo crear Photo si al menos una foto fue tomada
-        if (afterPath != null) {
-          photos.add(Photo(
+        // Use original paths if current are null (safety fallback)
+        final finalBeforePath = beforePath ?? originalBeforePath;
+        final finalAfterPath = afterPath ?? originalAfterPath;
+
+        debugPrint('  Task $i:');
+        debugPrint('    currentBefore=$beforePath, currentAfter=$afterPath');
+        debugPrint('    originalBefore=$originalBeforePath, originalAfter=$originalAfterPath');
+        debugPrint('    finalBefore=$finalBeforePath, finalAfter=$finalAfterPath');
+
+        // Create Photo if at least ONE photo exists (before OR after)
+        // Both fields are optional, supporting flexible workflows
+        if (finalBeforePath != null && finalBeforePath.isNotEmpty ||
+            finalAfterPath != null && finalAfterPath.isNotEmpty) {
+          
+          final photo = Photo(
             id: Isar.autoIncrement,
-            workReportId: 0, // Se asignará después de crear el reporte
-            photoPath: afterPath, // Foto principal (después)
-            descripcion: afterDesc,
-            beforeWorkPhotoPath: beforePath, // Foto antes (opcional)
-            beforeWorkDescripcion: beforeDesc,
-          ));
+            workReportId: 0, // Will be assigned after report creation
+            beforeWorkPhotoPath: (finalBeforePath?.isNotEmpty ?? false) ? finalBeforePath : null,
+            photoPath: (finalAfterPath?.isNotEmpty ?? false) ? finalAfterPath : null,
+            beforeWorkDescripcion: (beforeDesc?.isNotEmpty ?? false) ? beforeDesc : null,
+            descripcion: (afterDesc?.isNotEmpty ?? false) ? afterDesc : null,
+          );
+          
+          photos.add(photo);
+          debugPrint('    ✅ Photo created (hasValidPhotos: ${photo.hasValidPhotos})');
+        } else {
+          debugPrint('    ⚠️ Skipped - no photo paths available');
         }
       }
+      
+      debugPrint('📊 Total valid photos: ${photos.length}');
 
       widget.onSubmit(report, photos, _photosModified);
     }

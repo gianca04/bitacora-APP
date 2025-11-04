@@ -24,13 +24,56 @@ class WorkReportDetailPage extends ConsumerStatefulWidget {
 
 class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
   late WorkReport _report;
+  
   @override
   void initState() {
     super.initState();
     // Inicializar reporte mutable y cargar fotos
     _report = widget.workReport;
+    
+    // 🔍 LOG DETALLADO: Objeto WorkReport completo al entrar a detalles
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('📄 WORK REPORT DETAIL PAGE - initState');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('WorkReport ID: ${_report.id}');
+    debugPrint('Name: ${_report.name}');
+    debugPrint('Description: ${_report.description}');
+    debugPrint('Employee ID: ${_report.employeeId}');
+    debugPrint('Project ID: ${_report.projectId}');
+    debugPrint('Start Time: ${_report.startTime}');
+    debugPrint('End Time: ${_report.endTime}');
+    debugPrint('Report Date: ${_report.reportDate}');
+    debugPrint('Suggestions: ${_report.suggestions}');
+    debugPrint('Tools: ${_report.tools}');
+    debugPrint('Personnel: ${_report.personnel}');
+    debugPrint('Materials: ${_report.materials}');
+    debugPrint('Has Supervisor Signature: ${_report.supervisorSignature != null}');
+    debugPrint('Has Manager Signature: ${_report.managerSignature != null}');
+    debugPrint('Created At: ${_report.createdAt}');
+    debugPrint('Updated At: ${_report.updatedAt}');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('');
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(photoViewModelProvider.notifier).loadByWorkReportId(_report.id);
+      debugPrint('📥 Loading photos for WorkReport ID: ${_report.id}');
+      ref.read(photoViewModelProvider.notifier).loadByWorkReportId(_report.id).then((_) {
+        final photoState = ref.read(photoViewModelProvider);
+        debugPrint('');
+        debugPrint('───────────────────────────────────────────────────────────');
+        debugPrint('📸 PHOTOS LOADED IN DETAIL PAGE');
+        debugPrint('───────────────────────────────────────────────────────────');
+        debugPrint('Total photos: ${photoState.photos.length}');
+        for (var i = 0; i < photoState.photos.length; i++) {
+          final photo = photoState.photos[i];
+          debugPrint('Photo $i:');
+          debugPrint('   ID: ${photo.id}');
+          debugPrint('   Before: ${photo.beforeWorkPhotoPath ?? "null"}');
+          debugPrint('   After: ${photo.photoPath ?? "null"}');
+        }
+        debugPrint('───────────────────────────────────────────────────────────');
+        debugPrint('');
+      });
     });
   }
 
@@ -47,21 +90,79 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
+              // 🔍 LOG DETALLADO: Antes de navegar a edición
+              debugPrint('');
+              debugPrint('═══════════════════════════════════════════════════════════');
+              debugPrint('✏️ NAVIGATING TO EDIT - WorkReport before navigation');
+              debugPrint('═══════════════════════════════════════════════════════════');
+              debugPrint('WorkReport ID: ${_report.id}');
+              debugPrint('Name: ${_report.name}');
+              debugPrint('Description: ${_report.description}');
+              debugPrint('Employee ID: ${_report.employeeId}');
+              debugPrint('Project ID: ${_report.projectId}');
+              debugPrint('Start Time: ${_report.startTime}');
+              debugPrint('End Time: ${_report.endTime}');
+              debugPrint('Report Date: ${_report.reportDate}');
+              debugPrint('Suggestions: ${_report.suggestions}');
+              debugPrint('Tools: ${_report.tools}');
+              debugPrint('Personnel: ${_report.personnel}');
+              debugPrint('Materials: ${_report.materials}');
+              debugPrint('Has Supervisor Signature: ${_report.supervisorSignature != null}');
+              debugPrint('Has Manager Signature: ${_report.managerSignature != null}');
+              debugPrint('═══════════════════════════════════════════════════════════');
+              debugPrint('');
+              
               context.pushNamed(
                 'edit-report',
                 pathParameters: {'id': _report.id.toString()},
                 extra: _report,
               ).then((value) {
+                // 🔍 LOG DETALLADO: Después de volver de edición
+                debugPrint('');
+                debugPrint('═══════════════════════════════════════════════════════════');
+                debugPrint('🔙 RETURNED FROM EDIT - Result type: ${value.runtimeType}');
+                debugPrint('═══════════════════════════════════════════════════════════');
+                
                 // If the edit page returned an updated WorkReport, update local state
                 if (value is WorkReport) {
+                  debugPrint('✅ Received updated WorkReport:');
+                  debugPrint('   ID: ${value.id}');
+                  debugPrint('   Name: ${value.name}');
+                  debugPrint('   Description: ${value.description}');
+                  debugPrint('   Employee ID: ${value.employeeId}');
+                  debugPrint('   Project ID: ${value.projectId}');
+                  debugPrint('   Updated At: ${value.updatedAt}');
+                  
                   setState(() {
                     _report = value;
                   });
+                  debugPrint('   Local _report updated');
+                } else {
+                  debugPrint('⚠️ No WorkReport returned (value is ${value?.runtimeType ?? "null"})');
                 }
+                debugPrint('═══════════════════════════════════════════════════════════');
+                debugPrint('');
 
                 // Recargar fotos después de editar (siempre)
+                debugPrint('📥 Reloading photos after edit for WorkReport ID: ${_report.id}');
                 ref.read(photoViewModelProvider.notifier)
-                  .loadByWorkReportId(_report.id);
+                  .loadByWorkReportId(_report.id).then((_) {
+                    final photoState = ref.read(photoViewModelProvider);
+                    debugPrint('');
+                    debugPrint('───────────────────────────────────────────────────────────');
+                    debugPrint('📸 PHOTOS RELOADED AFTER EDIT');
+                    debugPrint('───────────────────────────────────────────────────────────');
+                    debugPrint('Total photos: ${photoState.photos.length}');
+                    for (var i = 0; i < photoState.photos.length; i++) {
+                      final photo = photoState.photos[i];
+                      debugPrint('Photo $i:');
+                      debugPrint('   ID: ${photo.id}');
+                      debugPrint('   Before: ${photo.beforeWorkPhotoPath ?? "null"}');
+                      debugPrint('   After: ${photo.photoPath ?? "null"}');
+                    }
+                    debugPrint('───────────────────────────────────────────────────────────');
+                    debugPrint('');
+                  });
               });
             },
             tooltip: 'Editar reporte',

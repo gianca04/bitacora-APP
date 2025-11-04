@@ -36,19 +36,62 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
   String? _afterPath;
   String? _beforeDesc;
   String? _afterDesc;
+  
+  // Store original paths to detect actual photo replacements
+  String? _originalBeforePath;
+  String? _originalAfterPath;
+  
+  // Track if we've sent the initial notification
+  bool _hasNotifiedInitialState = false;
 
   @override
   void initState() {
     super.initState();
     _beforePath = widget.beforePhotoPath;
     _afterPath = widget.afterPhotoPath;
-    _beforeDesc = widget.beforeDescription;
-    _afterDesc = widget.afterDescription;
-    // Notify parent of initial values so the parent state remains in sync
-    // (useful when the card is created with existing photo paths)
+    _beforeDesc = widget.beforeDescription ?? '';
+    _afterDesc = widget.afterDescription ?? '';
+    
+    // Remember original paths
+    _originalBeforePath = widget.beforePhotoPath;
+    _originalAfterPath = widget.afterPhotoPath;
+    
+    // Notify parent of initial values ONLY ONCE to sync state
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onChanged(_beforePath, _afterPath, _beforeDesc, _afterDesc);
+      if (!_hasNotifiedInitialState) {
+        _hasNotifiedInitialState = true;
+        widget.onChanged(_beforePath, _afterPath, _beforeDesc, _afterDesc);
+      }
     });
+  }
+  
+  @override
+  void didUpdateWidget(BeforeAfterPhotoCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // If parent passes new paths (e.g., when loading), update our state
+    // But only if they're actually different from current state
+    if (widget.beforePhotoPath != _beforePath || 
+        widget.afterPhotoPath != _afterPath ||
+        widget.beforeDescription != _beforeDesc ||
+        widget.afterDescription != _afterDesc) {
+      
+      setState(() {
+        // Update paths if they changed externally
+        if (widget.beforePhotoPath != oldWidget.beforePhotoPath) {
+          _beforePath = widget.beforePhotoPath;
+          _originalBeforePath = widget.beforePhotoPath;
+        }
+        if (widget.afterPhotoPath != oldWidget.afterPhotoPath) {
+          _afterPath = widget.afterPhotoPath;
+          _originalAfterPath = widget.afterPhotoPath;
+        }
+        
+        // Update descriptions
+        _beforeDesc = widget.beforeDescription ?? '';
+        _afterDesc = widget.afterDescription ?? '';
+      });
+    }
   }
 
   @override
@@ -161,8 +204,9 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
         if (_path.isNotEmpty)
           Stack(
             children: [
-              // Preview de la imagen
+              // Preview de la imagen con Key única para forzar refresh
               ClipRRect(
+                key: ValueKey(_path), // ✨ Key única basada en la ruta
                 borderRadius: BorderRadius.circular(8),
                 child: Image.file(
                   File(_path),
@@ -325,19 +369,47 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
         final photoStorageService = ref.read(photoStorageServiceProvider);
         final String permanentPath = await photoStorageService.savePhoto(photo.path);
         
-        // Eliminar la foto anterior si existe
-        if (isBeforePhoto && _beforePath != null) {
-          await photoStorageService.deletePhoto(_beforePath!);
-        } else if (!isBeforePhoto && _afterPath != null) {
-          await photoStorageService.deletePhoto(_afterPath!);
+        debugPrint('');
+        debugPrint('📷 PHOTO CAPTURED - BeforeAfterPhotoCard');
+        debugPrint('   isBeforePhoto: $isBeforePhoto');
+        debugPrint('   New photo path: $permanentPath');
+        debugPrint('   Current ${isBeforePhoto ? "before" : "after"}Path: ${isBeforePhoto ? _beforePath : _afterPath}');
+        debugPrint('   Original ${isBeforePhoto ? "before" : "after"}Path: ${isBeforePhoto ? _originalBeforePath : _originalAfterPath}');
+        
+        // Eliminar la foto anterior SOLO si es diferente de la original
+        // (es decir, si ya había sido reemplazada antes en esta sesión)
+        if (isBeforePhoto) {
+          if (_beforePath != null && _beforePath != _originalBeforePath) {
+            debugPrint('   🗑️ Deleting old before photo (not original): $_beforePath');
+            await photoStorageService.deletePhoto(_beforePath!);
+          } else {
+            debugPrint('   ✅ Preserving before photo (is original or null)');
+          }
+        } else {
+          if (_afterPath != null && _afterPath != _originalAfterPath) {
+            debugPrint('   🗑️ Deleting old after photo (not original): $_afterPath');
+            await photoStorageService.deletePhoto(_afterPath!);
+          } else {
+            debugPrint('   ✅ Preserving after photo (is original or null)');
+          }
         }
+        debugPrint('');
         
         setState(() {
+          debugPrint('🔄 setState: Updating ${isBeforePhoto ? "BEFORE" : "AFTER"} photo');
+          debugPrint('   Before setState:');
+          debugPrint('      _beforePath: $_beforePath');
+          debugPrint('      _afterPath: $_afterPath');
+          
           if (isBeforePhoto) {
             _beforePath = permanentPath;
           } else {
             _afterPath = permanentPath;
           }
+          
+          debugPrint('   After setState:');
+          debugPrint('      _beforePath: $_beforePath');
+          debugPrint('      _afterPath: $_afterPath');
         });
         _notifyChange();
         
@@ -373,6 +445,12 @@ class _BeforeAfterPhotoCardState extends ConsumerState<BeforeAfterPhotoCard> {
   }
 
   void _notifyChange() {
+    debugPrint('🔔 BeforeAfterPhotoCard._notifyChange called');
+    debugPrint('   Notifying parent with:');
+    debugPrint('   beforePath: $_beforePath');
+    debugPrint('   afterPath: $_afterPath');
+    debugPrint('   beforeDesc: $_beforeDesc');
+    debugPrint('   afterDesc: $_afterDesc');
     widget.onChanged(_beforePath, _afterPath, _beforeDesc, _afterDesc);
   }
 }

@@ -10,13 +10,14 @@ class Photo {
   @Index()
   late int workReportId;
 
-  // Photo after work
-  late String photoPath;
-  String? descripcion;
-
-  // Photo before work (optional)
+  // Photo paths - at least one must be provided
+  // Note: Both fields are optional to support flexible workflows
   String? beforeWorkPhotoPath;
+  String? photoPath; // Photo after work
+
+  // Optional descriptions
   String? beforeWorkDescripcion;
+  String? descripcion;
 
   // Timestamps for record management
   @Index()
@@ -26,12 +27,17 @@ class Photo {
   Photo({
     this.id = Isar.autoIncrement,
     required this.workReportId,
-    required this.photoPath,
-    this.descripcion,
     this.beforeWorkPhotoPath,
+    this.photoPath,
     this.beforeWorkDescripcion,
+    this.descripcion,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
+
+  /// Validates that at least one photo path is provided
+  bool get hasValidPhotos => 
+      (beforeWorkPhotoPath != null && beforeWorkPhotoPath!.isNotEmpty) ||
+      (photoPath != null && photoPath!.isNotEmpty);
 }

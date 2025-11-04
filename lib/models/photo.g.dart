@@ -37,18 +37,23 @@ const PhotoSchema = CollectionSchema(
       name: r'descripcion',
       type: IsarType.string,
     ),
-    r'photoPath': PropertySchema(
+    r'hasValidPhotos': PropertySchema(
       id: 4,
+      name: r'hasValidPhotos',
+      type: IsarType.bool,
+    ),
+    r'photoPath': PropertySchema(
+      id: 5,
       name: r'photoPath',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'workReportId': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'workReportId',
       type: IsarType.long,
     )
@@ -118,7 +123,12 @@ int _photoEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.photoPath.length * 3;
+  {
+    final value = object.photoPath;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -132,9 +142,10 @@ void _photoSerialize(
   writer.writeString(offsets[1], object.beforeWorkPhotoPath);
   writer.writeDateTime(offsets[2], object.createdAt);
   writer.writeString(offsets[3], object.descripcion);
-  writer.writeString(offsets[4], object.photoPath);
-  writer.writeDateTime(offsets[5], object.updatedAt);
-  writer.writeLong(offsets[6], object.workReportId);
+  writer.writeBool(offsets[4], object.hasValidPhotos);
+  writer.writeString(offsets[5], object.photoPath);
+  writer.writeDateTime(offsets[6], object.updatedAt);
+  writer.writeLong(offsets[7], object.workReportId);
 }
 
 Photo _photoDeserialize(
@@ -149,9 +160,9 @@ Photo _photoDeserialize(
     createdAt: reader.readDateTimeOrNull(offsets[2]),
     descripcion: reader.readStringOrNull(offsets[3]),
     id: id,
-    photoPath: reader.readString(offsets[4]),
-    updatedAt: reader.readDateTimeOrNull(offsets[5]),
-    workReportId: reader.readLong(offsets[6]),
+    photoPath: reader.readStringOrNull(offsets[5]),
+    updatedAt: reader.readDateTimeOrNull(offsets[6]),
+    workReportId: reader.readLong(offsets[7]),
   );
   return object;
 }
@@ -172,10 +183,12 @@ P _photoDeserializeProp<P>(
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 7:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1008,6 +1021,16 @@ extension PhotoQueryFilter on QueryBuilder<Photo, Photo, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Photo, Photo, QAfterFilterCondition> hasValidPhotosEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hasValidPhotos',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Photo, Photo, QAfterFilterCondition> idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1060,8 +1083,24 @@ extension PhotoQueryFilter on QueryBuilder<Photo, Photo, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Photo, Photo, QAfterFilterCondition> photoPathIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'photoPath',
+      ));
+    });
+  }
+
+  QueryBuilder<Photo, Photo, QAfterFilterCondition> photoPathIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'photoPath',
+      ));
+    });
+  }
+
   QueryBuilder<Photo, Photo, QAfterFilterCondition> photoPathEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1074,7 +1113,7 @@ extension PhotoQueryFilter on QueryBuilder<Photo, Photo, QFilterCondition> {
   }
 
   QueryBuilder<Photo, Photo, QAfterFilterCondition> photoPathGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1089,7 +1128,7 @@ extension PhotoQueryFilter on QueryBuilder<Photo, Photo, QFilterCondition> {
   }
 
   QueryBuilder<Photo, Photo, QAfterFilterCondition> photoPathLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1104,8 +1143,8 @@ extension PhotoQueryFilter on QueryBuilder<Photo, Photo, QFilterCondition> {
   }
 
   QueryBuilder<Photo, Photo, QAfterFilterCondition> photoPathBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1366,6 +1405,18 @@ extension PhotoQuerySortBy on QueryBuilder<Photo, Photo, QSortBy> {
     });
   }
 
+  QueryBuilder<Photo, Photo, QAfterSortBy> sortByHasValidPhotos() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasValidPhotos', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Photo, Photo, QAfterSortBy> sortByHasValidPhotosDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasValidPhotos', Sort.desc);
+    });
+  }
+
   QueryBuilder<Photo, Photo, QAfterSortBy> sortByPhotoPath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'photoPath', Sort.asc);
@@ -1452,6 +1503,18 @@ extension PhotoQuerySortThenBy on QueryBuilder<Photo, Photo, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Photo, Photo, QAfterSortBy> thenByHasValidPhotos() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasValidPhotos', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Photo, Photo, QAfterSortBy> thenByHasValidPhotosDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasValidPhotos', Sort.desc);
+    });
+  }
+
   QueryBuilder<Photo, Photo, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1531,6 +1594,12 @@ extension PhotoQueryWhereDistinct on QueryBuilder<Photo, Photo, QDistinct> {
     });
   }
 
+  QueryBuilder<Photo, Photo, QDistinct> distinctByHasValidPhotos() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasValidPhotos');
+    });
+  }
+
   QueryBuilder<Photo, Photo, QDistinct> distinctByPhotoPath(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1583,7 +1652,13 @@ extension PhotoQueryProperty on QueryBuilder<Photo, Photo, QQueryProperty> {
     });
   }
 
-  QueryBuilder<Photo, String, QQueryOperations> photoPathProperty() {
+  QueryBuilder<Photo, bool, QQueryOperations> hasValidPhotosProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasValidPhotos');
+    });
+  }
+
+  QueryBuilder<Photo, String?, QQueryOperations> photoPathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'photoPath');
     });
