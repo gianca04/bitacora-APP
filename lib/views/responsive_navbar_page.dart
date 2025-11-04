@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../viewmodels/menu_viewmodel.dart';
+import '../providers/app_providers.dart';
 
 class ResponsiveNavBarPage extends ConsumerWidget {
   const ResponsiveNavBarPage({super.key});

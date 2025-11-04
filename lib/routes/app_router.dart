@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../viewmodels/auth_viewmodel.dart';
+import '../providers/app_providers.dart';
 import '../views/app_shell.dart';
 import '../views/responsive_navbar_page.dart';
 import '../views/sign_in_page.dart';
@@ -19,7 +20,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   // Listen to the Riverpod auth state and notify the ChangeNotifier when it
   // changes. This keeps a single GoRouter instance that responds to auth
   // updates (sign in / sign out) by re-running the `redirect` logic.
-  ref.listen<AuthState>(authViewModelProvider, (previous, next) => refresh.notify());
+  ref.listen<AuthState>(
+    authViewModelProvider,
+    (previous, next) => refresh.notify(),
+  );
 
   return GoRouter(
     initialLocation: '/',

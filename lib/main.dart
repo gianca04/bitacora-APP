@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'routes/app_router.dart';
+import 'services/isar_service.dart';
 
-
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
+void main() async {
+  // Ensure Flutter bindings are initialized before async operations
+  WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Isar database before running the app
+  await IsarService().initialize();
+  
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {

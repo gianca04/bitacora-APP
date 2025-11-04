@@ -18,29 +18,34 @@ class AuthState {
   const AuthState.error(String message) : this._(status: AuthStatus.error, errorMessage: message);
 }
 
+/// ViewModel for authentication operations
+/// Manages authentication state and coordinates with AuthRepository
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository repository;
 
   AuthViewModel({required this.repository}) : super(const AuthState.initial());
 
-  Future<void> signIn({required String email, required String password, required bool rememberMe}) async {
+  /// Sign in with email and password
+  Future<void> signIn({
+    required String email,
+    required String password,
+    required bool rememberMe,
+  }) async {
     state = const AuthState.loading();
     try {
-      final user = await repository.signIn(email: email, password: password, rememberMe: rememberMe);
+      final user = await repository.signIn(
+        email: email,
+        password: password,
+        rememberMe: rememberMe,
+      );
       state = AuthState.authenticated(user);
     } catch (e) {
       state = AuthState.error(e.toString());
     }
   }
 
+  /// Sign out the current user
   void signOut() {
     state = const AuthState.initial();
   }
 }
-
-final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository());
-
-final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>((ref) {
-  final repo = ref.read(authRepositoryProvider);
-  return AuthViewModel(repository: repo);
-});

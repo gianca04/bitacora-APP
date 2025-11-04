@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../controllers/auth_controller.dart';
-import '../viewmodels/auth_viewmodel.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+import '../viewmodels/auth_viewmodel.dart'; // For AuthStatus enum
+import '../providers/app_providers.dart';
 
 class SignInPage extends ConsumerStatefulWidget {
   const SignInPage({super.key});

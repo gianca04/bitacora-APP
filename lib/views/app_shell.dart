@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:heroicons/heroicons.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/menu_item_model.dart';
 import '../viewmodels/menu_viewmodel.dart';
-import '../controllers/menu_controller.dart' as menu_ctrl;
-import '../controllers/auth_controller.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import 'package:go_router/go_router.dart';
+import '../controllers/menu_controller.dart' as app_menu;
+import '../providers/app_providers.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -19,7 +18,7 @@ class AppShell extends ConsumerWidget {
     final width = MediaQuery.of(context).size.width;
     final bool isLargeScreen = width > 800;
     final state = ref.watch(menuViewModelProvider);
-    final controller = ref.read(menu_ctrl.menuControllerProvider);
+    final app_menu.MenuController controller = ref.read(menuControllerProvider);
     final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
     return Theme(
@@ -67,7 +66,7 @@ class AppShell extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     MenuViewState state,
-    menu_ctrl.MenuController controller,
+    app_menu.MenuController controller,
     GlobalKey<ScaffoldState> scaffoldKey,
   ) => Drawer(
         child: Column(
@@ -134,7 +133,7 @@ class AppShell extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     MenuViewState state,
-    menu_ctrl.MenuController controller,
+    app_menu.MenuController controller,
   ) => Row(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -184,7 +183,7 @@ class _ProfileIcon extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.read(menu_ctrl.menuControllerProvider);
+    final app_menu.MenuController controller = ref.read(menuControllerProvider);
     final authState = ref.watch(authViewModelProvider);
 
     String displayName = '';

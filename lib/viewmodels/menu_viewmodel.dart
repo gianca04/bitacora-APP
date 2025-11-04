@@ -18,10 +18,12 @@ class MenuViewState {
   }
 }
 
+/// ViewModel for menu operations
+/// Manages menu state and coordinates with MenuRepository
 class MenuViewModel extends StateNotifier<MenuViewState> {
   final MenuRepository repository;
 
-  MenuViewModel({required this.repository}) : super(MenuViewState(items: [])) {
+  MenuViewModel({required this.repository}) : super(const MenuViewState(items: [])) {
     _load();
   }
 
@@ -35,11 +37,3 @@ class MenuViewModel extends StateNotifier<MenuViewState> {
     state = state.copyWith(selectedIndex: index);
   }
 }
-
-final menuRepositoryProvider = Provider<MenuRepository>((ref) => MenuRepository());
-
-final menuViewModelProvider = StateNotifierProvider<MenuViewModel, MenuViewState>((ref) {
-  final repo = ref.read(menuRepositoryProvider);
-  return MenuViewModel(repository: repo);
-});
-
