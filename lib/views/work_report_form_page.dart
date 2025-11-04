@@ -255,24 +255,60 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
         debugPrint('✅ Report updated in database');
 
         // Para actualización: si las fotos fueron modificadas por el usuario,
-        // eliminamos las antiguas y creamos las nuevas. Si no hubo cambios de
-        // fotos, preservamos las fotos existentes.
+        // comparamos las rutas antiguas con las nuevas y eliminamos solo las fotos
+        // físicas que cambiaron. Luego actualizamos los registros en la BD.
         if (photosChanged) {
           debugPrint('🔄 Photos changed - updating photo records');
           final photoViewModel = ref.read(photoViewModelProvider.notifier);
           
-          // Cargar fotos existentes ANTES de borrar
+          // Cargar fotos existentes ANTES de actualizar
           await photoViewModel.loadByWorkReportId(report.id);
           final existingPhotos = ref.read(photoViewModelProvider).photos;
           
           debugPrint('   Existing photos count: ${existingPhotos.length}');
           debugPrint('   New photos count: ${photos.length}');
           
-          // Eliminar fotos antiguas del reporte (borra registros de BD)
+          // Comparar y eliminar solo las fotos físicas que cambiaron
+          for (int i = 0; i < photos.length && i < existingPhotos.length; i++) {
+            final newPhoto = photos[i];
+            final oldPhoto = existingPhotos[i];
+            
+            debugPrint('   📸 Comparing photo $i:');
+            debugPrint('      Old beforePath: ${oldPhoto.beforeWorkPhotoPath}');
+            debugPrint('      New beforePath: ${newPhoto.beforeWorkPhotoPath}');
+            debugPrint('      Old afterPath: ${oldPhoto.photoPath}');
+            debugPrint('      New afterPath: ${newPhoto.photoPath}');
+            
+            // Comparar beforeWorkPhotoPath
+            if (oldPhoto.beforeWorkPhotoPath != null && 
+                oldPhoto.beforeWorkPhotoPath != newPhoto.beforeWorkPhotoPath) {
+              debugPrint('      🗑️ Deleting old BEFORE photo: ${oldPhoto.beforeWorkPhotoPath}');
+              try {
+                await photoViewModel.storageService.deletePhoto(oldPhoto.beforeWorkPhotoPath!);
+                debugPrint('      ✅ Old BEFORE photo deleted');
+              } catch (e) {
+                debugPrint('      ⚠️ Error deleting old BEFORE photo: $e');
+              }
+            }
+            
+            // Comparar photoPath (after)
+            if (oldPhoto.photoPath != null && 
+                oldPhoto.photoPath != newPhoto.photoPath) {
+              debugPrint('      🗑️ Deleting old AFTER photo: ${oldPhoto.photoPath}');
+              try {
+                await photoViewModel.storageService.deletePhoto(oldPhoto.photoPath!);
+                debugPrint('      ✅ Old AFTER photo deleted');
+              } catch (e) {
+                debugPrint('      ⚠️ Error deleting old AFTER photo: $e');
+              }
+            }
+          }
+          
+          // Ahora eliminar todos los registros de BD
           await photoViewModel.deleteByWorkReportId(report.id);
-          debugPrint('   🗑️ Old photos deleted from DB');
+          debugPrint('   🗑️ Old photo records deleted from DB');
 
-          // Crear nuevas fotos con las rutas actuales (pueden ser originales o nuevas)
+          // Crear nuevos registros con las rutas actuales
           for (final photo in photos) {
             if (photo.hasValidPhotos) {
               debugPrint('   Creating photo: beforePath=${photo.beforeWorkPhotoPath}, afterPath=${photo.photoPath}');

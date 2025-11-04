@@ -270,8 +270,8 @@ class _WorkReportListPageState extends ConsumerState<WorkReportListPage> {
     );
 
     if (confirmed == true && mounted) {
-      // First delete all photos associated with the report
-      await ref.read(photoViewModelProvider.notifier).deleteByWorkReportId(report.id);
+      // First delete all photos associated with the report (including physical files)
+      await ref.read(photoViewModelProvider.notifier).deleteByWorkReportIdWithFiles(report.id);
       
       // Then delete the report itself
       await ref.read(workReportViewModelProvider.notifier).deleteReport(report.id);

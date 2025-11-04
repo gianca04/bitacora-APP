@@ -3,6 +3,9 @@ import 'package:path_provider/path_provider.dart';
 
 import '../models/work_report.dart';
 import '../models/photo.dart';
+import '../models/connectivity_preferences.dart';
+import '../models/user.dart';
+import '../models/employee.dart';
 
 class IsarService {
   static final IsarService _instance = IsarService._internal();
@@ -23,6 +26,9 @@ class IsarService {
       [
         WorkReportSchema,
         PhotoSchema,
+        ConnectivityPreferencesSchema,
+        UserSchema,
+        EmployeeSchema,
       ],
       directory: dir.path,
       inspector: true, // Enable Isar Inspector for debugging (disable in production)

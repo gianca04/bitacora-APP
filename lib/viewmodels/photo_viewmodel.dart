@@ -119,19 +119,26 @@ class PhotoViewModel extends StateNotifier<PhotoState> {
   Future<bool> deletePhoto(Id id) async {
     try {
       // Get photo before deleting to clean up files
-      // final photos = state.photos.where((p) => p.id == id).toList();
+      final photos = state.photos.where((p) => p.id == id).toList();
       
       final success = await repository.delete(id);
-      if (success) {
-        // final photo = photos.first;
-        // TODO: TEMPORAL - Comentado para evitar borrar fotos que no cambiaron
+      if (success && photos.isNotEmpty) {
+        final photo = photos.first;
         // Delete photo files from storage
-        // if (photo.photoPath != null && photo.photoPath!.isNotEmpty) {
-        //   await storageService.deletePhoto(photo.photoPath!);
-        // }
-        // if (photo.beforeWorkPhotoPath != null && photo.beforeWorkPhotoPath!.isNotEmpty) {
-        //   await storageService.deletePhoto(photo.beforeWorkPhotoPath!);
-        // }
+        if (photo.photoPath != null && photo.photoPath!.isNotEmpty) {
+          try {
+            await storageService.deletePhoto(photo.photoPath!);
+          } catch (e) {
+            print('⚠️ Error deleting after photo file: $e');
+          }
+        }
+        if (photo.beforeWorkPhotoPath != null && photo.beforeWorkPhotoPath!.isNotEmpty) {
+          try {
+            await storageService.deletePhoto(photo.beforeWorkPhotoPath!);
+          } catch (e) {
+            print('⚠️ Error deleting before photo file: $e');
+          }
+        }
         await loadAll();
       }
       return success;
@@ -141,25 +148,47 @@ class PhotoViewModel extends StateNotifier<PhotoState> {
     }
   }
 
-  /// Delete all photos for a work report
+  /// Delete all photos for a work report (only DB records, not physical files)
+  /// Physical files should be deleted before calling this method
   Future<int> deleteByWorkReportId(int workReportId) async {
     try {
+      final count = await repository.deleteByWorkReportId(workReportId);
+      await loadAll();
+      return count;
+    } catch (e) {
+      state = PhotoState.error(e.toString());
+      return 0;
+    }
+  }
+
+  /// Delete all photos for a work report including physical files
+  /// Use this when deleting an entire work report
+  Future<int> deleteByWorkReportIdWithFiles(int workReportId) async {
+    try {
       // Get photos before deleting to clean up files
-      // final photos = await repository.getByWorkReportId(workReportId);
+      final photos = await repository.getByWorkReportId(workReportId);
+      
+      // Delete photo files from storage
+      for (final photo in photos) {
+        if (photo.photoPath != null && photo.photoPath!.isNotEmpty) {
+          try {
+            await storageService.deletePhoto(photo.photoPath!);
+          } catch (e) {
+            // Log but continue deleting other photos
+            print('⚠️ Error deleting after photo: $e');
+          }
+        }
+        if (photo.beforeWorkPhotoPath != null && photo.beforeWorkPhotoPath!.isNotEmpty) {
+          try {
+            await storageService.deletePhoto(photo.beforeWorkPhotoPath!);
+          } catch (e) {
+            // Log but continue deleting other photos
+            print('⚠️ Error deleting before photo: $e');
+          }
+        }
+      }
       
       final count = await repository.deleteByWorkReportId(workReportId);
-      
-      // TODO: TEMPORAL - Comentado para evitar borrar fotos que no cambiaron
-      // Delete photo files from storage
-      // for (final photo in photos) {
-      //   if (photo.photoPath != null && photo.photoPath!.isNotEmpty) {
-      //     await storageService.deletePhoto(photo.photoPath!);
-      //   }
-      //   if (photo.beforeWorkPhotoPath != null && photo.beforeWorkPhotoPath!.isNotEmpty) {
-      //     await storageService.deletePhoto(photo.beforeWorkPhotoPath!);
-      //   }
-      // }
-      
       await loadAll();
       return count;
     } catch (e) {

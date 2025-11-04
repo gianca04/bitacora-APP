@@ -8,6 +8,8 @@ import '../models/menu_item_model.dart';
 import '../viewmodels/menu_viewmodel.dart';
 import '../controllers/menu_controller.dart' as app_menu;
 import '../providers/app_providers.dart';
+import '../widgets/logo_to_connectivity_transition.dart';
+import '../widgets/connectivity_indicator.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -40,8 +42,9 @@ class AppShell extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Small logo in the AppBar for branding
-                SvgPicture.asset('assets/images/svg/logo.svg', height: 28),
+                // Logo que transiciona a indicador de conectividad
+                const LogoToConnectivityTransition(),
+                const SizedBox(width: 12),
                 if (isLargeScreen)
                   Expanded(
                     child: _navBarItems(context, ref, state, controller),
@@ -79,7 +82,12 @@ class AppShell extends ConsumerWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [SvgPicture.asset('assets/images/svg/logo.svg', height: 35)],
+                  children: [
+                    SvgPicture.asset('assets/images/svg/logo.svg', height: 20),
+                    const SizedBox(width: 12),
+                    // Indicador de conectividad en el drawer (usa preferencias del usuario)
+                    const ConnectivityIndicator(),
+                  ],
                 ),
               ),
             ),

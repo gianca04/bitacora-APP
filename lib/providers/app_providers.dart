@@ -6,6 +6,8 @@ import '../repositories/auth_repository.dart';
 import '../repositories/menu_repository.dart';
 import '../repositories/work_report_repository.dart';
 import '../repositories/photo_repository.dart';
+import '../repositories/user_repository.dart';
+import '../repositories/employee_repository.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/menu_viewmodel.dart';
 import '../viewmodels/work_report_viewmodel.dart';
@@ -58,6 +60,20 @@ final workReportRepositoryProvider = Provider<WorkReportRepository>((ref) {
 final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
   final isarService = ref.watch(isarServiceProvider);
   return PhotoRepository(isarService);
+});
+
+/// Provider for User repository
+/// Depends on isarServiceProvider to access the database
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  final isarService = ref.watch(isarServiceProvider);
+  return UserRepository(isarService);
+});
+
+/// Provider for Employee repository
+/// Depends on isarServiceProvider to access the database
+final employeeRepositoryProvider = Provider<EmployeeRepository>((ref) {
+  final isarService = ref.watch(isarServiceProvider);
+  return EmployeeRepository(isarService);
 });
 
 // ============================================================================
