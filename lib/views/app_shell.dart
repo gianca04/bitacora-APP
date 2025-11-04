@@ -96,6 +96,10 @@ class AppShell extends ConsumerWidget {
                         onTap: () {
                           // navigate based on item title
                           switch (entry.value.title.toLowerCase()) {
+                            case 'reports':
+                              scaffoldKey.currentState?.openEndDrawer();
+                              context.go('/reports');
+                              break;
                             case 'about':
                               scaffoldKey.currentState?.openEndDrawer();
                               context.go('/about');
@@ -144,6 +148,9 @@ class AppShell extends ConsumerWidget {
               (entry) => InkWell(
                 onTap: () {
                   switch (entry.value.title.toLowerCase()) {
+                    case 'reports':
+                      context.go('/reports');
+                      break;
                     case 'about':
                       context.go('/about');
                       break;

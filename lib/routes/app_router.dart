@@ -10,6 +10,10 @@ import '../views/sign_in_page.dart';
 import '../views/about_page.dart';
 import '../views/contact_page.dart';
 import '../views/settings_page.dart';
+import '../views/work_report_list_page.dart';
+import '../views/work_report_form_page.dart';
+import '../views/work_report_detail_page.dart';
+import '../models/work_report.dart';
 
 /// Provides a GoRouter that reacts to authentication state via Riverpod.
 final routerProvider = Provider<GoRouter>((ref) {
@@ -52,6 +56,37 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: '/reports',
+            name: 'reports',
+            builder: (context, state) => const WorkReportListPage(),
+            routes: [
+              // Subruta para crear nuevo reporte
+              GoRoute(
+                path: 'new',
+                name: 'new-report',
+                builder: (context, state) => const WorkReportFormPage(),
+              ),
+              // Subruta para ver detalle de reporte
+              GoRoute(
+                path: ':id',
+                name: 'report-detail',
+                builder: (context, state) {
+                  final report = state.extra as WorkReport;
+                  return WorkReportDetailPage(workReport: report);
+                },
+              ),
+              // Subruta para editar reporte
+              GoRoute(
+                path: ':id/edit',
+                name: 'edit-report',
+                builder: (context, state) {
+                  final report = state.extra as WorkReport;
+                  return WorkReportFormPage(workReport: report);
+                },
+              ),
+            ],
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/isar_service.dart';
+import '../services/photo_storage_service.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/menu_repository.dart';
 import '../repositories/work_report_repository.dart';
@@ -22,6 +23,12 @@ import '../controllers/photo_controller.dart';
 /// This is the foundation for all database operations
 final isarServiceProvider = Provider<IsarService>((ref) {
   return IsarService();
+});
+
+/// Provider for the photo storage service
+/// Handles photo persistence, compression, and cleanup
+final photoStorageServiceProvider = Provider<PhotoStorageService>((ref) {
+  return PhotoStorageService();
 });
 
 // ============================================================================
@@ -83,7 +90,11 @@ final workReportViewModelProvider =
 final photoViewModelProvider =
     StateNotifierProvider<PhotoViewModel, PhotoState>((ref) {
   final repo = ref.watch(photoRepositoryProvider);
-  return PhotoViewModel(repository: repo);
+  final storageService = ref.watch(photoStorageServiceProvider);
+  return PhotoViewModel(
+    repository: repo,
+    storageService: storageService,
+  );
 });
 
 // ============================================================================
