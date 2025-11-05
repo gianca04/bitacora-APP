@@ -73,6 +73,7 @@ class CupertinoNotificationBanner extends StatelessWidget {
     );
 
     overlay.insert(overlayEntry);
+    debugPrint('🔔 CupertinoNotificationBanner: inserted overlayEntry');
   }
 
   @override

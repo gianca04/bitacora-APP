@@ -90,7 +90,13 @@ class TokenStorageService {
         _storage.read(key: _keyAccessToken),
         _storage.read(key: _keyTokenType),
         _storage.read(key: _keyExpiresAt),
-      ]);
+      ]).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print('⏱️ TokenStorage: Timeout leyendo token');
+          return [null, null, null];
+        },
+      );
 
       final accessToken = values[0];
       final tokenType = values[1];
@@ -109,30 +115,63 @@ class TokenStorageService {
       );
     } catch (e) {
       // If parsing fails or any error occurs, return null
+      print('❌ TokenStorage: Error obteniendo token - $e');
       return null;
     }
   }
 
   /// Retrieves stored user ID
   Future<int?> getUserId() async {
-    final value = await _storage.read(key: _keyUserId);
-    return value != null ? int.tryParse(value) : null;
+    try {
+      final value = await _storage.read(key: _keyUserId).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      );
+      return value != null ? int.tryParse(value) : null;
+    } catch (e) {
+      print('❌ TokenStorage: Error obteniendo userId - $e');
+      return null;
+    }
   }
 
   /// Retrieves stored user name
   Future<String?> getUserName() async {
-    return _storage.read(key: _keyUserName);
+    try {
+      return await _storage.read(key: _keyUserName).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      );
+    } catch (e) {
+      print('❌ TokenStorage: Error obteniendo userName - $e');
+      return null;
+    }
   }
 
   /// Retrieves stored user email
   Future<String?> getUserEmail() async {
-    return _storage.read(key: _keyUserEmail);
+    try {
+      return await _storage.read(key: _keyUserEmail).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      );
+    } catch (e) {
+      print('❌ TokenStorage: Error obteniendo userEmail - $e');
+      return null;
+    }
   }
 
   /// Retrieves stored employee ID
   Future<int?> getEmployeeId() async {
-    final value = await _storage.read(key: _keyEmployeeId);
-    return value != null ? int.tryParse(value) : null;
+    try {
+      final value = await _storage.read(key: _keyEmployeeId).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      );
+      return value != null ? int.tryParse(value) : null;
+    } catch (e) {
+      print('❌ TokenStorage: Error obteniendo employeeId - $e');
+      return null;
+    }
   }
 
   /// Checks if a valid token exists in storage
@@ -145,23 +184,44 @@ class TokenStorageService {
 
   /// Deletes all stored authentication data
   Future<void> deleteAll() async {
-    await Future.wait([
-      _storage.delete(key: _keyAccessToken),
-      _storage.delete(key: _keyTokenType),
-      _storage.delete(key: _keyExpiresAt),
-      _storage.delete(key: _keyUserId),
-      _storage.delete(key: _keyUserName),
-      _storage.delete(key: _keyUserEmail),
-      _storage.delete(key: _keyEmployeeId),
-    ]);
+    try {
+      print('🗑️ TokenStorage: Eliminando todos los datos de autenticación...');
+      await Future.wait([
+        _storage.delete(key: _keyAccessToken),
+        _storage.delete(key: _keyTokenType),
+        _storage.delete(key: _keyExpiresAt),
+        _storage.delete(key: _keyUserId),
+        _storage.delete(key: _keyUserName),
+        _storage.delete(key: _keyUserEmail),
+        _storage.delete(key: _keyEmployeeId),
+      ]).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print('⏱️ TokenStorage: Timeout eliminando datos');
+          return [];
+        },
+      );
+      print('✅ TokenStorage: Datos eliminados exitosamente');
+    } catch (e) {
+      print('❌ TokenStorage: Error eliminando datos - $e');
+      rethrow;
+    }
   }
 
   /// Deletes only the token, keeping user info
   Future<void> deleteToken() async {
-    await Future.wait([
-      _storage.delete(key: _keyAccessToken),
-      _storage.delete(key: _keyTokenType),
-      _storage.delete(key: _keyExpiresAt),
-    ]);
+    try {
+      await Future.wait([
+        _storage.delete(key: _keyAccessToken),
+        _storage.delete(key: _keyTokenType),
+        _storage.delete(key: _keyExpiresAt),
+      ]).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => [],
+      );
+    } catch (e) {
+      print('❌ TokenStorage: Error eliminando token - $e');
+      rethrow;
+    }
   }
 }

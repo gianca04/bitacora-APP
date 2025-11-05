@@ -79,7 +79,6 @@ class _SignInForm extends StatelessWidget {
     required this.onPasswordVisibilityChanged,
     required this.onRememberMeChanged,
     required this.ref,
-    super.key,
   });
 
   @override
@@ -124,11 +123,13 @@ class _SignInForm extends StatelessWidget {
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   style: const TextStyle(color: Colors.white),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Por favor ingrese un correo electrónico';
+                    }
                     final emailValid = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-                    if (!emailValid.hasMatch(value))
+                    if (!emailValid.hasMatch(value)) {
                       return 'Por favor ingrese un correo electrónico valido';
+                    }
                     return null;
                   },
                   decoration: InputDecoration(
@@ -162,10 +163,12 @@ class _SignInForm extends StatelessWidget {
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   style: const TextStyle(color: Colors.white),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Por favor ingrese una contraseña';
-                    if (value.length < 6)
+                    }
+                    if (value.length < 6) {
                       return 'La contraseña debe tener al menos 6 caracteres';
+                    }
                     return null;
                   },
                   decoration: InputDecoration(
@@ -252,9 +255,8 @@ class _SignInForm extends StatelessWidget {
 
                               print('🔵 SignInPage: Sign in completado, success: $success');
                               
-                              // No need to navigate manually - the router's redirect
-                              // logic will automatically navigate when auth state changes
-                              // to authenticated
+                              // Router will handle navigation automatically
+                              // No manual navigation needed
                             }
                           },
                     child: Padding(
@@ -278,13 +280,35 @@ class _SignInForm extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                // Show error message inline if auth fails
                 if (authState.status == AuthStatus.error)
-                  Text(
-                    authState.errorMessage ?? 'An error occurred',
-                    style: const TextStyle(color: Colors.red),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              authState.errorMessage ?? 'Error desconocido',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                const SizedBox(height: 16),
               ],
             ),
           ),

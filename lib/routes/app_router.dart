@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 
 import '../viewmodels/auth_viewmodel.dart';
 import '../providers/app_providers.dart';
@@ -14,19 +15,46 @@ import '../views/work_report_form_page.dart';
 import '../views/work_report_detail_page.dart';
 import '../models/work_report.dart';
 
+/// Notifier for GoRouter to listen to auth state changes
+class _GoRouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+  bool _initialized = false;
+
+  _GoRouterNotifier(this._ref) {
+    print('🔔 GoRouterNotifier: constructed');
+    // Listen to auth state changes
+    _ref.listen<AuthState>(
+      authViewModelProvider,
+      (previous, next) {
+        print('🔔 GoRouterNotifier: Auth state changed from ${previous?.status} to ${next.status}');
+        notifyListeners();
+      },
+    );
+    
+    // Listen to auth initialization
+    _ref.listen<AsyncValue<bool>>(
+      authInitProvider,
+      (previous, next) {
+        print('🔔 GoRouterNotifier: Auth init changed, loading: ${next.isLoading}, hasValue: ${next.hasValue}, error: ${next.hasError}');
+        if (next.hasValue && !_initialized) {
+          _initialized = true;
+          notifyListeners();
+        }
+      },
+    );
+  }
+}
+
 /// Provides a GoRouter that reacts to authentication state via Riverpod.
 /// The router is recreated whenever the auth state changes, ensuring
 /// redirects are properly evaluated.
 final routerProvider = Provider<GoRouter>((ref) {
-  // Watch both the auth initialization and auth state
-  final authInit = ref.watch(authInitProvider);
-  final authState = ref.watch(authViewModelProvider);
+  final notifier = _GoRouterNotifier(ref);
   
-  print('🔄 Router: Creating router with auth init: ${authInit.asData?.value}, auth status: ${authState.status}');
-
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/signin',
     debugLogDiagnostics: true,
+    refreshListenable: notifier,
     routes: [
       // ShellRoute provides a persistent AppShell (AppBar + Drawer)
       ShellRoute(
@@ -101,59 +129,35 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Wait for auth initialization to complete
       if (authInit.isLoading) {
-        print('🔀 Router: Still initializing auth, waiting...');
+        print('🔀 Router: Still initializing auth, staying on current location');
         return null; // Don't redirect while checking stored auth
       }
 
-      // During loading state (user is actively logging in), keep them where they are
-      // This prevents navigation during API call
-      if (authState.status == AuthStatus.loading) {
-        print('🔀 Router: Loading state - login in progress, staying on current page');
-        return null; // Stay on current page during login
+      // If initialization failed, go to signin
+      if (authInit.hasError) {
+        print('🔀 Router: Auth initialization error, redirecting to signin');
+        return isSignInPage ? null : '/signin';
       }
 
-      // If we reach error state, ensure we're on signin page
-      if (authState.status == AuthStatus.error) {
-        print('🔀 Router: Error state detected');
-        if (!isSignInPage) {
-          print('🔀 Router: Redirecting to signin due to error');
-          return '/signin';
-        }
-        // Already on signin page, stay there to show error
-        print('🔀 Router: Already on signin page, staying to show error');
-        return null;
+      // Check authentication status
+      final isAuthenticated = authState.status == AuthStatus.authenticated;
+
+      print('🔀 Router: isAuthenticated=$isAuthenticated');
+
+      // Authenticated users should not see signin page
+      if (isAuthenticated && isSignInPage) {
+        print('🔀 Router: ✅ Authenticated user on signin page, redirecting to home');
+        return '/';
       }
 
-      // During initial state, redirect to signin if not already there
-      if (authState.status == AuthStatus.initial) {
-        print('🔀 Router: Initial state detected');
-        final redirect = isSignInPage ? null : '/signin';
-        print('🔀 Router: Redirecting to $redirect');
-        return redirect;
-      }
-
-      // If user is authenticated
-      if (authState.status == AuthStatus.authenticated) {
-        print('🔀 Router: User is authenticated');
-        // Redirect authenticated users away from signin page
-        if (isSignInPage) {
-          print('🔀 Router: On signin page, redirecting to home');
-          return '/';
-        }
-        // Allow access to all other pages
-        print('🔀 Router: Allowing access to ${state.matchedLocation}');
-        return null;
-      }
-
-      // If user is not authenticated and not on signin page
-      if (!isSignInPage) {
-        print('🔀 Router: Not authenticated, redirecting to signin');
-        // Redirect to signin page
+      // Unauthenticated users can only access signin page
+      if (!isAuthenticated && !isSignInPage) {
+        print('🔀 Router: ❌ Unauthenticated user trying to access protected route, redirecting to signin');
         return '/signin';
       }
 
-      // Already on signin page and not authenticated - allow access
-      print('🔀 Router: On signin page, not authenticated, allowing access');
+      // Allow access
+      print('🔀 Router: ✓ Allowing access to ${state.matchedLocation}');
       return null;
     },
   );
