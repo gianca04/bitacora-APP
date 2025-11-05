@@ -105,14 +105,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null; // Don't redirect while checking stored auth
       }
 
-      // During loading (checking stored auth), allow navigation to complete
-      // Don't redirect yet, wait for auth check to finish
+      // During loading state (user is actively logging in), keep them where they are
+      // This prevents navigation during API call
       if (authState.status == AuthStatus.loading) {
-        print('🔀 Router: Loading state - checking stored auth...');
-        return null; // Don't redirect, let the current navigation proceed
+        print('🔀 Router: Loading state - login in progress, staying on current page');
+        return null; // Stay on current page during login
       }
 
-      // During initial state (shouldn't happen anymore since we start with loading)
+      // If we reach error state, ensure we're on signin page
+      if (authState.status == AuthStatus.error) {
+        print('🔀 Router: Error state detected');
+        if (!isSignInPage) {
+          print('🔀 Router: Redirecting to signin due to error');
+          return '/signin';
+        }
+        // Already on signin page, stay there to show error
+        print('🔀 Router: Already on signin page, staying to show error');
+        return null;
+      }
+
+      // During initial state, redirect to signin if not already there
       if (authState.status == AuthStatus.initial) {
         print('🔀 Router: Initial state detected');
         final redirect = isSignInPage ? null : '/signin';
@@ -133,7 +145,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // If user is not authenticated (error state or unauthenticated)
+      // If user is not authenticated and not on signin page
       if (!isSignInPage) {
         print('🔀 Router: Not authenticated, redirecting to signin');
         // Redirect to signin page

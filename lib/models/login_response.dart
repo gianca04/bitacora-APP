@@ -57,6 +57,9 @@ class LoginResponse {
   /// Check if login was successful and has all required data
   bool get isValid => success && token != null && user != null;
 
+  /// Check if this is an error response
+  bool get isError => !success;
+
   @override
   String toString() {
     return 'LoginResponse(success: $success, message: $message, '

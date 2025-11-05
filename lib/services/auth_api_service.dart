@@ -38,19 +38,8 @@ class AuthApiService {
 
       print('🔐 LoginResponse parseado: $loginResponse');
 
-      // Check if login was successful
-      if (!loginResponse.success) {
-        print('❌ Login no exitoso: ${loginResponse.message}');
-        throw AuthException(loginResponse.message);
-      }
-
-      // Validate that we have all required data
-      if (!loginResponse.isValid) {
-        print('❌ Respuesta inválida del servidor');
-        throw AuthException('Respuesta incompleta del servidor');
-      }
-
-      print('✅ Login exitoso, retornando respuesta');
+      // Return response as-is, let the caller decide what to do based on success field
+      // Don't throw exception here - the response is valid, just not successful
       return loginResponse;
     } on DioException catch (e) {
       // Handle Dio errors

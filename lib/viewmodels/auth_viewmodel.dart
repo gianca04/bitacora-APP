@@ -95,7 +95,23 @@ class AuthViewModel extends StateNotifier<AuthState> {
         rememberMe: rememberMe,
       );
       
-      print('🔄 AuthViewModel: Respuesta recibida, actualizando estado a authenticated');
+      print('🔄 AuthViewModel: Respuesta recibida, success: ${loginResponse.success}');
+      
+      // Check if login was successful
+      if (!loginResponse.success) {
+        print('❌ AuthViewModel: Login no exitoso - ${loginResponse.message}');
+        state = AuthState.error(loginResponse.message);
+        return false;
+      }
+      
+      // Validate that we have all required data
+      if (!loginResponse.isValid) {
+        print('❌ AuthViewModel: Respuesta inválida del servidor');
+        state = const AuthState.error('Respuesta incompleta del servidor');
+        return false;
+      }
+      
+      print('🔄 AuthViewModel: Login exitoso, actualizando estado a authenticated');
       state = AuthState.authenticated(loginResponse);
       print('✅ AuthViewModel: Estado actualizado exitosamente');
       return true;
