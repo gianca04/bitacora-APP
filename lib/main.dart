@@ -11,11 +11,15 @@ void main() async {
   // Ensure Flutter bindings are initialized before async operations
   WidgetsFlutterBinding.ensureInitialized();
   
+  print('🚀 Inicializando base de datos Isar...');
   // Initialize Isar database before running the app
   await IsarService().initialize();
+  print('✅ Base de datos Isar inicializada');
   
+  print('🚀 Inicializando ConnectivityService...');
   // Initialize connectivity monitoring service
   await ConnectivityService().initialize();
+  print('✅ ConnectivityService inicializado');
   
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -28,45 +32,31 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
-  bool _isCheckingAuth = true;
-
   @override
   void initState() {
     super.initState();
-    _checkAuthenticationStatus();
+    // Check auth asynchronously without blocking UI
+    _checkAuthInBackground();
   }
 
-  /// Check if user has valid stored authentication on app start
-  Future<void> _checkAuthenticationStatus() async {
-    try {
-      // Check for stored authentication token
-      await ref.read(authControllerProvider).checkAuthStatus();
-    } catch (e) {
-      print('Error checking auth status: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingAuth = false;
-        });
+  /// Check authentication in background without blocking the app
+  void _checkAuthInBackground() {
+    // Use microtask to not block the initial build
+    Future.microtask(() async {
+      print('🔐 Verificando autenticación almacenada...');
+      try {
+        final isAuthenticated = await ref.read(authControllerProvider).checkAuthStatus();
+        print('🔐 Autenticación: ${isAuthenticated ? "✅ Válida" : "❌ No encontrada"}');
+      } catch (e) {
+        print('❌ Error verificando autenticación: $e');
       }
-    }
+    });
   }
 
   // Root widget uses MaterialApp.router wired to the GoRouter from provider
   @override
   Widget build(BuildContext context) {
     final GoRouter router = ref.watch(routerProvider);
-
-    // Show splash screen while checking authentication
-    if (_isCheckingAuth) {
-      return MaterialApp(
-        title: 'Bitácora',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        ),
-        home: const _SplashScreen(),
-      );
-    }
 
     return MaterialApp.router(
       title: 'Bitácora',
@@ -80,43 +70,6 @@ class _MyAppState extends ConsumerState<MyApp> {
           child: child ?? const SizedBox.shrink(),
         );
       },
-    );
-  }
-}
-
-/// Simple splash screen shown while checking authentication
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF18181B),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // You can add your logo here
-            Icon(
-              Icons.verified_user,
-              size: 80,
-              color: Color(0xFF2A8D8D),
-            ),
-            SizedBox(height: 24),
-            CircularProgressIndicator(
-              color: Color(0xFF2A8D8D),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Verificando autenticación...',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

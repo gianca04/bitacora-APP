@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 
 import '../viewmodels/auth_viewmodel.dart'; // For AuthStatus enum
 import '../providers/app_providers.dart';
@@ -242,6 +241,8 @@ class _SignInForm extends StatelessWidget {
                         ? null
                         : () async {
                             if (formKey.currentState?.validate() ?? false) {
+                              print('🔵 SignInPage: Iniciando sign in');
+                              
                               final success = await controller.signIn(
                                 context: context,
                                 email: emailController.text.trim(),
@@ -249,10 +250,11 @@ class _SignInForm extends StatelessWidget {
                                 rememberMe: rememberMe,
                               );
 
-                              // Navigate to home page after successful login
-                              if (success && context.mounted) {
-                                context.go('/');
-                              }
+                              print('🔵 SignInPage: Sign in completado, success: $success');
+                              
+                              // No need to navigate manually - the router's redirect
+                              // logic will automatically navigate when auth state changes
+                              // to authenticated
                             }
                           },
                     child: Padding(

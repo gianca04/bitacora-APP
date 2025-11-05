@@ -201,4 +201,4 @@ class DioConfig {
     }
     return 'Error desconocido en la respuesta del servidor.';
   }
-}
+} 

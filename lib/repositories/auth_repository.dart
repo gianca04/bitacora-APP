@@ -28,18 +28,27 @@ class AuthRepository {
     bool rememberMe = false,
   }) async {
     try {
+      print('📦 AuthRepository: Llamando a AuthApiService.login()');
       final response = await _authApiService.login(
         email: email,
         password: password,
       );
 
+      print('📦 AuthRepository: Respuesta recibida de API');
+
       // Save to secure storage if login successful and rememberMe is true
       if (response.isValid && rememberMe) {
+        print('💾 Guardando datos de autenticación (rememberMe: true)');
         await _saveAuthData(response);
+        print('✅ Datos de autenticación guardados');
+      } else {
+        print('⏭️ No guardando datos (rememberMe: $rememberMe, isValid: ${response.isValid})');
       }
 
+      print('✅ AuthRepository: Retornando respuesta');
       return response;
     } catch (e) {
+      print('❌ AuthRepository: Error en signIn - ${e.toString()}');
       // Re-throw to be handled by the ViewModel/Controller
       rethrow;
     }
@@ -47,10 +56,13 @@ class AuthRepository {
 
   /// Saves authentication data to secure storage
   Future<void> _saveAuthData(LoginResponse response) async {
+    print('💾 _saveAuthData: Guardando token...');
     if (response.token != null) {
       await _tokenStorage.saveToken(response.token!);
+      print('✅ Token guardado');
     }
 
+    print('💾 _saveAuthData: Guardando información de usuario...');
     if (response.user != null) {
       await _tokenStorage.saveUserInfo(
         userId: response.user!.id,
@@ -58,6 +70,7 @@ class AuthRepository {
         userEmail: response.user!.email,
         employeeId: response.employee?.id,
       );
+      print('✅ Información de usuario guardada');
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/token_response.dart';
@@ -27,14 +29,27 @@ class TokenStorageService {
 
   /// Saves the token to secure storage
   Future<void> saveToken(TokenResponse token) async {
-    await Future.wait([
-      _storage.write(key: _keyAccessToken, value: token.accessToken),
-      _storage.write(key: _keyTokenType, value: token.tokenType),
-      _storage.write(
-        key: _keyExpiresAt,
-        value: token.expiresAt.toIso8601String(),
-      ),
-    ]);
+    print('💾 TokenStorage: Guardando token...');
+    try {
+      await Future.wait([
+        _storage.write(key: _keyAccessToken, value: token.accessToken),
+        _storage.write(key: _keyTokenType, value: token.tokenType),
+        _storage.write(
+          key: _keyExpiresAt,
+          value: token.expiresAt.toIso8601String(),
+        ),
+      ]).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print('⏱️ TokenStorage: Timeout guardando token');
+          throw TimeoutException('Timeout guardando token');
+        },
+      );
+      print('✅ TokenStorage: Token guardado exitosamente');
+    } catch (e) {
+      print('❌ TokenStorage: Error guardando token - $e');
+      rethrow;
+    }
   }
 
   /// Saves user information to secure storage
@@ -44,13 +59,26 @@ class TokenStorageService {
     required String userEmail,
     int? employeeId,
   }) async {
-    await Future.wait([
-      _storage.write(key: _keyUserId, value: userId.toString()),
-      _storage.write(key: _keyUserName, value: userName),
-      _storage.write(key: _keyUserEmail, value: userEmail),
-      if (employeeId != null)
-        _storage.write(key: _keyEmployeeId, value: employeeId.toString()),
-    ]);
+    print('💾 TokenStorage: Guardando información de usuario...');
+    try {
+      await Future.wait([
+        _storage.write(key: _keyUserId, value: userId.toString()),
+        _storage.write(key: _keyUserName, value: userName),
+        _storage.write(key: _keyUserEmail, value: userEmail),
+        if (employeeId != null)
+          _storage.write(key: _keyEmployeeId, value: employeeId.toString()),
+      ]).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print('⏱️ TokenStorage: Timeout guardando info de usuario');
+          throw TimeoutException('Timeout guardando información de usuario');
+        },
+      );
+      print('✅ TokenStorage: Información de usuario guardada exitosamente');
+    } catch (e) {
+      print('❌ TokenStorage: Error guardando info de usuario - $e');
+      rethrow;
+    }
   }
 
   /// Retrieves the token from secure storage

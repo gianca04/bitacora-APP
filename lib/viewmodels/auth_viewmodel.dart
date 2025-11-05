@@ -80,23 +80,29 @@ class AuthViewModel extends StateNotifier<AuthState> {
     required String password,
     bool rememberMe = false,
   }) async {
+    print('🔄 AuthViewModel: Cambiando estado a loading');
     state = const AuthState.loading();
     
     try {
+      print('🔄 AuthViewModel: Llamando a repository.signIn()');
       final loginResponse = await repository.signIn(
         email: email,
         password: password,
         rememberMe: rememberMe,
       );
       
+      print('🔄 AuthViewModel: Respuesta recibida, actualizando estado a authenticated');
       state = AuthState.authenticated(loginResponse);
+      print('✅ AuthViewModel: Estado actualizado exitosamente');
       return true;
     } on AuthException catch (e) {
       // Handle authentication-specific errors
+      print('❌ AuthViewModel: AuthException - ${e.message}');
       state = AuthState.error(e.message);
       return false;
     } catch (e) {
       // Handle any other errors
+      print('❌ AuthViewModel: Error inesperado - ${e.toString()}');
       state = AuthState.error('Error inesperado: ${e.toString()}');
       return false;
     }

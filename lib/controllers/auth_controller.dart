@@ -28,15 +28,20 @@ class AuthController {
     required String password,
     bool rememberMe = false,
   }) async {
+    print('🎮 AuthController: Iniciando signIn');
+    
     final success = await ref.read(authViewModelProvider.notifier).signIn(
           email: email,
           password: password,
           rememberMe: rememberMe,
         );
 
+    print('🎮 AuthController: signIn completado, success: $success');
+
     final state = ref.read(authViewModelProvider);
 
     if (success) {
+      print('🎮 AuthController: Mostrando notificación de éxito');
       // Show success notification
       CupertinoNotificationBanner.show(
         context,
@@ -45,7 +50,9 @@ class AuthController {
         showLogo: true,
         duration: const Duration(seconds: 2),
       );
+      print('🎮 AuthController: Notificación mostrada');
     } else {
+      print('🎮 AuthController: Mostrando notificación de error');
       // Show error notification
       CupertinoNotificationBanner.show(
         context,
@@ -56,6 +63,7 @@ class AuthController {
       );
     }
 
+    print('🎮 AuthController: Retornando success: $success');
     return success;
   }
 

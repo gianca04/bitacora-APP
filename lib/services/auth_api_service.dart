@@ -19,6 +19,8 @@ class AuthApiService {
     required String password,
   }) async {
     try {
+      print('🔐 Iniciando login para: $email');
+      
       final response = await _dio.post(
         '/login',
         data: {
@@ -27,28 +29,37 @@ class AuthApiService {
         },
       );
 
+      print('🔐 Respuesta recibida, parseando...');
+      
       // Parse response
       final loginResponse = LoginResponse.fromJson(
         response.data as Map<String, dynamic>,
       );
 
+      print('🔐 LoginResponse parseado: $loginResponse');
+
       // Check if login was successful
       if (!loginResponse.success) {
+        print('❌ Login no exitoso: ${loginResponse.message}');
         throw AuthException(loginResponse.message);
       }
 
       // Validate that we have all required data
       if (!loginResponse.isValid) {
+        print('❌ Respuesta inválida del servidor');
         throw AuthException('Respuesta incompleta del servidor');
       }
 
+      print('✅ Login exitoso, retornando respuesta');
       return loginResponse;
     } on DioException catch (e) {
       // Handle Dio errors
+      print('❌ DioException en login: ${e.toString()}');
       final errorMessage = DioConfig.handleError(e);
       throw AuthException(errorMessage);
     } catch (e) {
       // Handle other errors
+      print('❌ Error en login: ${e.toString()}');
       if (e is AuthException) rethrow;
       throw AuthException('Error al procesar la solicitud: ${e.toString()}');
     }

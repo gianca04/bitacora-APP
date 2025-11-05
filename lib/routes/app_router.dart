@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../viewmodels/auth_viewmodel.dart';
@@ -16,22 +15,17 @@ import '../views/work_report_detail_page.dart';
 import '../models/work_report.dart';
 
 /// Provides a GoRouter that reacts to authentication state via Riverpod.
+/// The router is recreated whenever the auth state changes, ensuring
+/// redirects are properly evaluated.
 final routerProvider = Provider<GoRouter>((ref) {
-  // Create a small ChangeNotifier that we can pass to GoRouter so it
-  // re-evaluates redirects when the auth state changes.
-  final refresh = _AuthChangeNotifier();
-
-  // Listen to the Riverpod auth state and notify the ChangeNotifier when it
-  // changes. This keeps a single GoRouter instance that responds to auth
-  // updates (sign in / sign out) by re-running the `redirect` logic.
-  ref.listen<AuthState>(
-    authViewModelProvider,
-    (previous, next) => refresh.notify(),
-  );
+  // Watch the auth state so the router is recreated when it changes
+  final authState = ref.watch(authViewModelProvider);
+  
+  print('🔄 Router: Creating router with auth status: ${authState.status}');
 
   return GoRouter(
     initialLocation: '/',
-    refreshListenable: refresh,
+    debugLogDiagnostics: true,
     routes: [
       // ShellRoute provides a persistent AppShell (AppBar + Drawer)
       ShellRoute(
@@ -101,39 +95,43 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authViewModelProvider);
       final isSignInPage = state.matchedLocation == '/signin';
 
+      print('🔀 Router redirect: location=${state.matchedLocation}, authStatus=${authState.status}, isSignInPage=$isSignInPage');
+
       // During initial load, allow navigation to complete
       // The main.dart will handle checking auth status
       if (authState.status == AuthStatus.initial) {
+        print('🔀 Router: Initial state detected');
         // If trying to access protected routes during initial load,
         // redirect to signin temporarily (will be corrected by checkAuthStatus)
-        return isSignInPage ? null : '/signin';
+        final redirect = isSignInPage ? null : '/signin';
+        print('🔀 Router: Redirecting to $redirect');
+        return redirect;
       }
 
       // If user is authenticated
       if (authState.status == AuthStatus.authenticated) {
+        print('🔀 Router: User is authenticated');
         // Redirect authenticated users away from signin page
         if (isSignInPage) {
+          print('🔀 Router: On signin page, redirecting to home');
           return '/';
         }
         // Allow access to all other pages
+        print('🔀 Router: Allowing access to ${state.matchedLocation}');
         return null;
       }
 
       // If user is not authenticated (unauthenticated or error state)
       if (!isSignInPage) {
+        print('🔀 Router: Not authenticated, redirecting to signin');
         // Redirect to signin page
         return '/signin';
       }
 
       // Already on signin page and not authenticated - allow access
+      print('🔀 Router: On signin page, not authenticated, allowing access');
       return null;
     },
   );
 });
-
-/// Small ChangeNotifier used to tell GoRouter to re-run redirect logic when
-/// the Riverpod auth state changes.
-class _AuthChangeNotifier extends ChangeNotifier {
-  void notify() => notifyListeners();
-}
 
