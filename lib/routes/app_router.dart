@@ -18,10 +18,11 @@ import '../models/work_report.dart';
 /// The router is recreated whenever the auth state changes, ensuring
 /// redirects are properly evaluated.
 final routerProvider = Provider<GoRouter>((ref) {
-  // Watch the auth state so the router is recreated when it changes
+  // Watch both the auth initialization and auth state
+  final authInit = ref.watch(authInitProvider);
   final authState = ref.watch(authViewModelProvider);
   
-  print('🔄 Router: Creating router with auth status: ${authState.status}');
+  print('🔄 Router: Creating router with auth init: ${authInit.asData?.value}, auth status: ${authState.status}');
 
   return GoRouter(
     initialLocation: '/',
@@ -92,17 +93,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
+      final authInit = ref.read(authInitProvider);
       final authState = ref.read(authViewModelProvider);
       final isSignInPage = state.matchedLocation == '/signin';
 
-      print('🔀 Router redirect: location=${state.matchedLocation}, authStatus=${authState.status}, isSignInPage=$isSignInPage');
+      print('🔀 Router redirect: location=${state.matchedLocation}, authInit=${authInit.asData?.value}, authStatus=${authState.status}, isSignInPage=$isSignInPage');
 
-      // During initial load, allow navigation to complete
-      // The main.dart will handle checking auth status
+      // Wait for auth initialization to complete
+      if (authInit.isLoading) {
+        print('🔀 Router: Still initializing auth, waiting...');
+        return null; // Don't redirect while checking stored auth
+      }
+
+      // During loading (checking stored auth), allow navigation to complete
+      // Don't redirect yet, wait for auth check to finish
+      if (authState.status == AuthStatus.loading) {
+        print('🔀 Router: Loading state - checking stored auth...');
+        return null; // Don't redirect, let the current navigation proceed
+      }
+
+      // During initial state (shouldn't happen anymore since we start with loading)
       if (authState.status == AuthStatus.initial) {
         print('🔀 Router: Initial state detected');
-        // If trying to access protected routes during initial load,
-        // redirect to signin temporarily (will be corrected by checkAuthStatus)
         final redirect = isSignInPage ? null : '/signin';
         print('🔀 Router: Redirecting to $redirect');
         return redirect;
@@ -121,7 +133,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // If user is not authenticated (unauthenticated or error state)
+      // If user is not authenticated (error state or unauthenticated)
       if (!isSignInPage) {
         print('🔀 Router: Not authenticated, redirecting to signin');
         // Redirect to signin page

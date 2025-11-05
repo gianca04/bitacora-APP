@@ -79,15 +79,18 @@ class AuthRepository {
   /// Returns [LoginResponse] with stored data if token is valid
   /// Returns null if no valid token exists
   Future<LoginResponse?> checkStoredAuth() async {
+    print('🔐 AuthRepository: Verificando token almacenado...');
     try {
       final token = await _tokenStorage.getToken();
 
       if (token == null || token.isExpired) {
+        print('🔐 AuthRepository: Token no encontrado o expirado');
         // Clean up expired token
         await _tokenStorage.deleteAll();
         return null;
       }
 
+      print('🔐 AuthRepository: Token válido encontrado, recuperando datos de usuario...');
       // Retrieve user info
       final userId = await _tokenStorage.getUserId();
       final userName = await _tokenStorage.getUserName();
@@ -96,11 +99,13 @@ class AuthRepository {
       // final employeeId = await _tokenStorage.getEmployeeId();
 
       if (userId == null || userName == null || userEmail == null) {
+        print('🔐 AuthRepository: Datos de usuario incompletos, limpiando...');
         // Incomplete data, clean up
         await _tokenStorage.deleteAll();
         return null;
       }
 
+      print('🔐 AuthRepository: ✅ Autenticación restaurada para usuario: $userName ($userEmail)');
       // Construct LoginResponse from stored data
       return LoginResponse(
         success: true,
@@ -114,6 +119,7 @@ class AuthRepository {
         employee: null, // Employee data can be fetched later if needed
       );
     } catch (e) {
+      print('❌ AuthRepository: Error verificando token: $e');
       // If any error occurs, clean up and return null
       await _tokenStorage.deleteAll();
       return null;

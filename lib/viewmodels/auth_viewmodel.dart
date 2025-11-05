@@ -49,25 +49,29 @@ class AuthState {
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository repository;
 
-  AuthViewModel({required this.repository}) : super(const AuthState.initial());
+  AuthViewModel({required this.repository}) : super(const AuthState.loading());
 
   /// Check for stored authentication on app start
   /// Returns true if valid stored auth was found, false otherwise
   Future<bool> checkAuthStatus() async {
+    print('🔐 AuthViewModel: Iniciando checkAuthStatus');
     state = const AuthState.loading();
 
     try {
+      print('🔐 AuthViewModel: Llamando a repository.checkStoredAuth()');
       final storedAuth = await repository.checkStoredAuth();
 
       if (storedAuth != null && storedAuth.isValid) {
+        print('🔐 AuthViewModel: Token válido encontrado, actualizando estado a authenticated');
         state = AuthState.authenticated(storedAuth);
         return true;
       } else {
+        print('🔐 AuthViewModel: No se encontró token válido, estado inicial');
         state = const AuthState.initial();
         return false;
       }
     } catch (e) {
-      print('Error checking auth status: $e');
+      print('❌ AuthViewModel: Error checking auth status: $e');
       state = const AuthState.initial();
       return false;
     }

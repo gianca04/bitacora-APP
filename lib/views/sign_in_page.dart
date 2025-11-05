@@ -17,7 +17,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _rememberMe = false;
+  bool _rememberMe = true; // Default to true for better UX
 
   @override
   void dispose() {

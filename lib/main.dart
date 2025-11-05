@@ -5,7 +5,6 @@ import 'routes/app_router.dart';
 import 'services/isar_service.dart';
 import 'services/connectivity_service.dart';
 import 'widgets/no_connection_banner.dart';
-import 'providers/app_providers.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized before async operations
@@ -32,27 +31,6 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    // Check auth asynchronously without blocking UI
-    _checkAuthInBackground();
-  }
-
-  /// Check authentication in background without blocking the app
-  void _checkAuthInBackground() {
-    // Use microtask to not block the initial build
-    Future.microtask(() async {
-      print('🔐 Verificando autenticación almacenada...');
-      try {
-        final isAuthenticated = await ref.read(authControllerProvider).checkAuthStatus();
-        print('🔐 Autenticación: ${isAuthenticated ? "✅ Válida" : "❌ No encontrada"}');
-      } catch (e) {
-        print('❌ Error verificando autenticación: $e');
-      }
-    });
-  }
-
   // Root widget uses MaterialApp.router wired to the GoRouter from provider
   @override
   Widget build(BuildContext context) {

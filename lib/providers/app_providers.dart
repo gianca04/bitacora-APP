@@ -86,10 +86,21 @@ final employeeRepositoryProvider = Provider<EmployeeRepository>((ref) {
 // ============================================================================
 
 /// Provider for authentication view model
+/// Manages authentication state throughout the app lifecycle
 final authViewModelProvider =
     StateNotifierProvider<AuthViewModel, AuthState>((ref) {
   final repo = ref.watch(authRepositoryProvider);
   return AuthViewModel(repository: repo);
+});
+
+/// Provider that initializes authentication on app startup
+/// This ensures stored authentication is checked before the router is built
+final authInitProvider = FutureProvider<bool>((ref) async {
+  final authViewModel = ref.watch(authViewModelProvider.notifier);
+  print('🔐 authInitProvider: Checking stored authentication...');
+  final hasAuth = await authViewModel.checkAuthStatus();
+  print('🔐 authInitProvider: Auth check completed. Has auth: $hasAuth');
+  return hasAuth;
 });
 
 /// Provider for menu view model
