@@ -84,7 +84,7 @@ class AppShell extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     SvgPicture.asset('assets/images/svg/logo.svg', height: 20),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 30),
                     // Indicador de conectividad en el drawer (usa preferencias del usuario)
                     const ConnectivityIndicator(),
                   ],
@@ -100,34 +100,44 @@ class AppShell extends ConsumerWidget {
                     .entries
                     .map(
                       (entry) => ListTile(
+                        leading: entry.value.icon,
                         selected: entry.key == state.selectedIndex,
                         onTap: () {
-                          // navigate based on item title
+                          // Prefer using explicit route provided by the MenuItemModel.
+                          scaffoldKey.currentState?.openEndDrawer();
+                          final route = entry.value.route;
+                          if (route != null) {
+                            if (route == '/signin') {
+                              // Treat signin route as a sign-out action in the menu
+                              controller.selectMenu(entry.key);
+                              ref.read(authControllerProvider).signOut(context);
+                              context.go(route);
+                            } else {
+                              context.go(route);
+                            }
+                            return;
+                          }
+
+                          // Fallback: handle older title-based navigation
                           switch (entry.value.title.toLowerCase()) {
                             case 'home':
-                              scaffoldKey.currentState?.openEndDrawer();
                               context.go('/');
                               break;
                             case 'reports':
-                              scaffoldKey.currentState?.openEndDrawer();
                               context.go('/reports');
                               break;
                             case 'about':
-                              scaffoldKey.currentState?.openEndDrawer();
                               context.go('/about');
                               break;
                             case 'contact':
-                              scaffoldKey.currentState?.openEndDrawer();
                               context.go('/contact');
                               break;
                             case 'settings':
-                              scaffoldKey.currentState?.openEndDrawer();
                               context.go('/settings');
                               break;
                             case 'sign out':
                               controller.selectMenu(entry.key);
                               ref.read(authControllerProvider).signOut(context);
-                              scaffoldKey.currentState?.openEndDrawer();
                               context.go('/signin');
                               break;
                             default:
@@ -159,6 +169,18 @@ class AppShell extends ConsumerWidget {
             .map(
               (entry) => InkWell(
                 onTap: () {
+                  final route = entry.value.route;
+                  if (route != null) {
+                    if (route == '/signin') {
+                      controller.selectMenu(entry.key);
+                      ref.read(authControllerProvider).signOut(context);
+                      context.go(route);
+                    } else {
+                      context.go(route);
+                    }
+                    return;
+                  }
+
                   switch (entry.value.title.toLowerCase()) {
                     case 'home':
                       context.go('/');
@@ -189,9 +211,18 @@ class AppShell extends ConsumerWidget {
                     vertical: 24.0,
                     horizontal: 16,
                   ),
-                  child: Text(
-                    entry.value.title,
-                    style: const TextStyle(fontSize: 18),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (entry.value.icon != null) ...[
+                        entry.value.icon!,
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        entry.value.title,
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    ],
                   ),
                 ),
               ),

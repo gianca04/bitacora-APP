@@ -160,34 +160,34 @@ class _WorkReportFormState extends State<WorkReportForm> {
       child: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // Basic Information Section
-          _buildSectionTitle('Basic Information'),
+          // Sección: Información básica
+          _buildSectionTitle('Información básica'),
           _buildTextField(
             controller: _nameController,
-            label: 'Report Name',
-            validator: (value) => value?.isEmpty ?? true ? 'Name is required' : null,
+            label: 'Nombre del reporte',
+            validator: (value) => value?.isEmpty ?? true ? 'El nombre es obligatorio' : null,
           ),
           const SizedBox(height: 16),
           _buildTextField(
             controller: _descriptionController,
-            label: 'Description',
+            label: 'Descripción',
             maxLines: 3,
-            validator: (value) => value?.isEmpty ?? true ? 'Description is required' : null,
+            validator: (value) => value?.isEmpty ?? true ? 'La descripción es obligatoria' : null,
           ),
           const SizedBox(height: 16),
           
-          // Employee and Project Section
-          _buildSectionTitle('Assignment'),
+          // Sección: Empleado y proyecto
+          _buildSectionTitle('Asignación'),
           Row(
             children: [
               Expanded(
                 child: _buildTextField(
                   controller: _employeeIdController,
-                  label: 'Employee ID',
+                  label: 'ID del empleado',
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Required';
-                    if (int.tryParse(value!) == null) return 'Invalid number';
+                    if (value?.isEmpty ?? true) return 'Obligatorio';
+                    if (int.tryParse(value!) == null) return 'Número inválido';
                     return null;
                   },
                 ),
@@ -196,11 +196,11 @@ class _WorkReportFormState extends State<WorkReportForm> {
               Expanded(
                 child: _buildTextField(
                   controller: _projectIdController,
-                  label: 'Project ID',
+                  label: 'ID del proyecto',
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Required';
-                    if (int.tryParse(value!) == null) return 'Invalid number';
+                    if (value?.isEmpty ?? true) return 'Obligatorio';
+                    if (int.tryParse(value!) == null) return 'Número inválido';
                     return null;
                   },
                 ),
@@ -209,10 +209,10 @@ class _WorkReportFormState extends State<WorkReportForm> {
           ),
           const SizedBox(height: 16),
 
-          // Date and Time Section
-          _buildSectionTitle('Schedule'),
+          // Sección: Fecha y hora
+          _buildSectionTitle('Fecha y hora'),
           _buildDateTimePicker(
-            label: 'Report Date',
+            label: 'Fecha del reporte',
             value: _reportDate,
             onChanged: (date) => setState(() => _reportDate = date),
           ),
@@ -221,7 +221,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
             children: [
               Expanded(
                 child: _buildTimePicker(
-                  label: 'Start Time',
+                  label: 'Hora inicio',
                   value: _startTime,
                   onChanged: (time) => setState(() => _startTime = time),
                 ),
@@ -229,7 +229,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildTimePicker(
-                  label: 'End Time',
+                  label: 'Hora fin',
                   value: _endTime,
                   onChanged: (time) => setState(() => _endTime = time),
                 ),
@@ -238,35 +238,35 @@ class _WorkReportFormState extends State<WorkReportForm> {
           ),
           const SizedBox(height: 16),
 
-          // Additional Details Section
-          _buildSectionTitle('Additional Details'),
+          // Sección: Detalles adicionales
+          _buildSectionTitle('Detalles adicionales'),
           _buildTextField(
             controller: _suggestionsController,
-            label: 'Suggestions',
+            label: 'Sugerencias',
             maxLines: 2,
           ),
           const SizedBox(height: 16),
           _buildTextField(
             controller: _toolsController,
-            label: 'Tools Used',
+            label: 'Herramientas utilizadas',
             maxLines: 2,
           ),
           const SizedBox(height: 16),
           _buildTextField(
             controller: _personnelController,
-            label: 'Personnel',
+            label: 'Personal',
             maxLines: 2,
           ),
           const SizedBox(height: 16),
           _buildTextField(
             controller: _materialsController,
-            label: 'Materials',
+            label: 'Materiales',
             maxLines: 2,
           ),
           const SizedBox(height: 24),
 
           // Photos Section - Fotos antes/después de cada tarea
-          _buildSectionTitle('Fotografías del Trabajo'),
+          _buildSectionTitle('Fotografías del trabajo'),
           Text(
             'Agregue fotos del antes y después de cada tarea realizada',
             style: TextStyle(
@@ -399,7 +399,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
               ),
             ),
             child: Text(
-              widget.workReport == null ? 'Create Report' : 'Update Report',
+              widget.workReport == null ? 'Crear reporte' : 'Actualizar reporte',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

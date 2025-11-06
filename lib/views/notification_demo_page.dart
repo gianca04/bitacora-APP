@@ -75,7 +75,7 @@ class NotificationDemoPage extends StatelessWidget {
                 ),
                 _buildButton(
                   context,
-                  label: 'Sin conexión',
+                  label: 'Offline',
                   onPressed: () => _showNoConnection(context),
                 ),
                 _buildButton(

@@ -30,10 +30,6 @@ class _WorkReportListPageState extends ConsumerState<WorkReportListPage> {
     final state = ref.watch(workReportViewModelProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Work Reports'),
-        backgroundColor: const Color(0xFF1E1E1E),
-      ),
       body: _buildBody(state),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToForm(context),

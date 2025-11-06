@@ -1,7 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-
+import '../views/profile_page.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../providers/app_providers.dart';
 import '../views/app_shell.dart';
@@ -75,6 +75,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/contact',
             name: 'contact',
             builder: (context, state) => const ContactPage(),
+          ),
+          GoRoute(
+            path: '/profile',
+            name: 'profile',
+            builder: (context, state) => const ProfilePage(),
           ),
           GoRoute(
             path: '/settings',

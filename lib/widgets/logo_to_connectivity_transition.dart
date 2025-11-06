@@ -71,11 +71,29 @@ class _LogoToConnectivityTransitionState
         }
 
         // Determinar qué mostrar
-        final shouldShowIndicator = _hasTransitioned && 
+        final shouldShowIndicator = _hasTransitioned &&
             (status != ConnectionStatus.online || preferences.showWhenOnline);
 
+        // Ajustar ancho del contenedor según el modo seleccionado del indicador.
+        // Si el usuario eligió 'badge' o 'iconWithText', necesitamos más ancho
+        // para que el texto sea legible en el navbar.
+        final int mode = preferences.displayMode;
+        double containerWidth;
+        switch (mode) {
+          case 3: // badge
+            containerWidth = 100;
+            break;
+          case 1: // iconWithText
+            containerWidth = 100;
+            break;
+          case 2: // dotOnly
+          case 0: // iconOnly
+          default:
+            containerWidth = 40;
+        }
+
         return SizedBox(
-          width: 30,
+          width: containerWidth,
           height: 28,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
@@ -93,7 +111,9 @@ class _LogoToConnectivityTransitionState
             child: shouldShowIndicator
                 ? SizedBox(
                     key: ValueKey('indicator-$status'),
-                    width: 30,
+                    // Allow the inner indicator to size itself up to the container
+                    // width. Keep height small to fit the navbar.
+                    width: containerWidth,
                     child: ConnectivityIndicator(
                       showWhenOnline: preferences.showWhenOnline,
                     ),

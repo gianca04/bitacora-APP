@@ -205,7 +205,7 @@ class ConnectivityIndicator extends ConsumerWidget {
       case ConnectionStatus.online:
         return 'Online';
       case ConnectionStatus.noInternet:
-        return 'Sin Internet';
+        return 'Error';
       case ConnectionStatus.offline:
         return 'Offline';
     }
