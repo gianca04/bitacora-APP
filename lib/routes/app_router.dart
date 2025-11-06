@@ -14,6 +14,7 @@ import '../views/work_report_list_page.dart';
 import '../views/work_report_form_page.dart';
 import '../views/work_report_detail_page.dart';
 import '../models/work_report.dart';
+import '../views/home_page.dart';
 
 /// Notifier for GoRouter to listen to auth state changes
 class _GoRouterNotifier extends ChangeNotifier {
@@ -63,7 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/',
             name: 'home',
-            builder: (context, state) => const ResponsiveNavBarPage(),
+            builder: (context, state) => const HomePage(),
           ),
           GoRoute(
             path: '/about',

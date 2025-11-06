@@ -46,13 +46,13 @@ class CupertinoNotificationBanner extends StatelessWidget {
     Duration duration = const Duration(seconds: 3),
   }) {
     // Buscar el Overlay de forma segura
-    final overlay = Overlay.maybeOf(context);
+    //final overlay = Overlay.maybeOf(context);
     
     // Si no hay Overlay disponible, no hacer nada
-    if (overlay == null) {
-      debugPrint('Warning: No Overlay found in context. Cannot show notification.');
-      return;
-    }
+    //if (overlay == null) {
+    //  debugPrint('Warning: No Overlay found in context. Cannot show notification.');
+    //  return;
+    //}
     
     late OverlayEntry overlayEntry;
 
@@ -72,7 +72,7 @@ class CupertinoNotificationBanner extends StatelessWidget {
       ),
     );
 
-    overlay.insert(overlayEntry);
+    //overlay.insert(overlayEntry);
     debugPrint('🔔 CupertinoNotificationBanner: inserted overlayEntry');
   }
 

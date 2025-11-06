@@ -10,7 +10,7 @@ class ResponsiveNavBarPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(menuViewModelProvider);
     return Center(
-      child: Text('Selected: ${state.selectedIndex}'),
+      child: Text('Index y pantalla principal'),
     );
   }
 }
