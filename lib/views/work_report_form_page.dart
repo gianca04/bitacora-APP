@@ -11,10 +11,7 @@ import '../widgets/work_report_form.dart';
 class WorkReportFormPage extends ConsumerStatefulWidget {
   final WorkReport? workReport;
 
-  const WorkReportFormPage({
-    super.key,
-    this.workReport,
-  });
+  const WorkReportFormPage({super.key, this.workReport});
 
   @override
   ConsumerState<WorkReportFormPage> createState() => _WorkReportFormPageState();
@@ -29,7 +26,7 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // 🔍 LOG DETALLADO: WorkReport recibido al inicializar el formulario
     debugPrint('');
     debugPrint('═══════════════════════════════════════════════════════════');
@@ -50,7 +47,9 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
       debugPrint('Tools: ${report.tools}');
       debugPrint('Personnel: ${report.personnel}');
       debugPrint('Materials: ${report.materials}');
-      debugPrint('Has Supervisor Signature: ${report.supervisorSignature != null}');
+      debugPrint(
+        'Has Supervisor Signature: ${report.supervisorSignature != null}',
+      );
       debugPrint('Has Manager Signature: ${report.managerSignature != null}');
       debugPrint('Created At: ${report.createdAt}');
       debugPrint('Updated At: ${report.updatedAt}');
@@ -59,7 +58,7 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
     }
     debugPrint('═══════════════════════════════════════════════════════════');
     debugPrint('');
-    
+
     // Cargar fotos existentes si estamos editando
     // Usar addPostFrameCallback para evitar modificar provider durante build
     if (widget.workReport != null) {
@@ -71,42 +70,49 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
 
   Future<void> _loadExistingPhotos() async {
     if (!mounted) return;
-    
+
     debugPrint('');
     debugPrint('───────────────────────────────────────────────────────────');
     debugPrint('📥 LOADING EXISTING PHOTOS');
     debugPrint('───────────────────────────────────────────────────────────');
     debugPrint('WorkReport ID: ${widget.workReport!.id}');
-    
+
     setState(() {
       _isLoadingPhotos = true;
     });
 
     try {
-      await ref.read(photoViewModelProvider.notifier)
-        .loadByWorkReportId(widget.workReport!.id);
-      
+      await ref
+          .read(photoViewModelProvider.notifier)
+          .loadByWorkReportId(widget.workReport!.id);
+
       if (!mounted) return;
-      
+
       final photoState = ref.read(photoViewModelProvider);
-      debugPrint('✅ Loaded ${photoState.photos.length} existing photos from database');
-      
+      debugPrint(
+        '✅ Loaded ${photoState.photos.length} existing photos from database',
+      );
+
       for (var i = 0; i < photoState.photos.length; i++) {
         final photo = photoState.photos[i];
         debugPrint('');
         debugPrint('   📸 Photo $i:');
         debugPrint('      ID: ${photo.id}');
         debugPrint('      WorkReport ID: ${photo.workReportId}');
-        debugPrint('      Before Photo: ${photo.beforeWorkPhotoPath ?? "null"}');
+        debugPrint(
+          '      Before Photo: ${photo.beforeWorkPhotoPath ?? "null"}',
+        );
         debugPrint('      After Photo: ${photo.photoPath ?? "null"}');
-        debugPrint('      Before Description: ${photo.beforeWorkDescripcion ?? "null"}');
+        debugPrint(
+          '      Before Description: ${photo.beforeWorkDescripcion ?? "null"}',
+        );
         debugPrint('      After Description: ${photo.descripcion ?? "null"}');
         debugPrint('      Created At: ${photo.createdAt}');
         debugPrint('      Updated At: ${photo.updatedAt}');
       }
       debugPrint('───────────────────────────────────────────────────────────');
       debugPrint('');
-      
+
       setState(() {
         _existingPhotos = photoState.photos;
         _isLoadingPhotos = false;
@@ -116,11 +122,11 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
       debugPrint('───────────────────────────────────────────────────────────');
       debugPrint('');
       if (!mounted) return;
-      
+
       setState(() {
         _isLoadingPhotos = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -154,27 +160,41 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Work Report' : 'New Work Report'),
-        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(
+          isEditing ? 'Editar Reporte' : 'Crear nuevo Reporte',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold, // Negrita
+            fontSize: 18, // Tamaño mediano
+          ),
+        ),
+        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
       ),
-      body: _isLoadingPhotos
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Cargando fotos...'),
-                ],
-              ),
-            )
-          : state.status == WorkReportStatus.loading
-              ? const Center(child: CircularProgressIndicator())
-              : WorkReportForm(
-                  workReport: widget.workReport,
-                  existingPhotos: _existingPhotos,
-                  onSubmit: (report, photos, photosChanged) => _handleSubmit(report, photos, photosChanged, context),
-                ),
+      body: Container(
+        color: Colors.black, // Fondo negro para el formulario
+        child: Stack(
+          children: [
+            _isLoadingPhotos
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Cargando fotos...'),
+                      ],
+                    ),
+                  )
+                : state.status == WorkReportStatus.loading
+                ? const Center(child: CircularProgressIndicator())
+                : WorkReportForm(
+                    workReport: widget.workReport,
+                    existingPhotos: _existingPhotos,
+                    onSubmit: (report, photos, photosChanged) =>
+                        _handleSubmit(report, photos, photosChanged, context),
+                  ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -202,7 +222,9 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
     debugPrint('   Tools: ${report.tools}');
     debugPrint('   Personnel: ${report.personnel}');
     debugPrint('   Materials: ${report.materials}');
-    debugPrint('   Has Supervisor Signature: ${report.supervisorSignature != null}');
+    debugPrint(
+      '   Has Supervisor Signature: ${report.supervisorSignature != null}',
+    );
     debugPrint('   Has Manager Signature: ${report.managerSignature != null}');
     debugPrint('');
     debugPrint('Photos: ${photos.length} photos');
@@ -210,7 +232,7 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
     debugPrint('Mode: ${widget.workReport == null ? "CREATE" : "UPDATE"}');
     debugPrint('═══════════════════════════════════════════════════════════');
     debugPrint('');
-    
+
     try {
       final viewModel = ref.read(workReportViewModelProvider.notifier);
 
@@ -220,14 +242,14 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
         // store the submitted report so we can return it later
         _submittedReport = report;
         final reportId = await viewModel.createReport(report);
-        
+
         // Create associated photos if report was created successfully
         if (reportId != null) {
           debugPrint('✅ Report created with ID: $reportId');
           // Update submitted report id
           _submittedReport?.id = reportId;
           final photoViewModel = ref.read(photoViewModelProvider.notifier);
-          
+
           // Photos have already been saved to permanent storage by BeforeAfterPhotoCard
           // using PhotoStorageService. We only need to create DB records.
           // Only save photos that have valid paths
@@ -260,50 +282,58 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
         if (photosChanged) {
           debugPrint('🔄 Photos changed - updating photo records');
           final photoViewModel = ref.read(photoViewModelProvider.notifier);
-          
+
           // Cargar fotos existentes ANTES de actualizar
           await photoViewModel.loadByWorkReportId(report.id);
           final existingPhotos = ref.read(photoViewModelProvider).photos;
-          
+
           debugPrint('   Existing photos count: ${existingPhotos.length}');
           debugPrint('   New photos count: ${photos.length}');
-          
+
           // Comparar y eliminar solo las fotos físicas que cambiaron
           for (int i = 0; i < photos.length && i < existingPhotos.length; i++) {
             final newPhoto = photos[i];
             final oldPhoto = existingPhotos[i];
-            
+
             debugPrint('   📸 Comparing photo $i:');
             debugPrint('      Old beforePath: ${oldPhoto.beforeWorkPhotoPath}');
             debugPrint('      New beforePath: ${newPhoto.beforeWorkPhotoPath}');
             debugPrint('      Old afterPath: ${oldPhoto.photoPath}');
             debugPrint('      New afterPath: ${newPhoto.photoPath}');
-            
+
             // Comparar beforeWorkPhotoPath
-            if (oldPhoto.beforeWorkPhotoPath != null && 
+            if (oldPhoto.beforeWorkPhotoPath != null &&
                 oldPhoto.beforeWorkPhotoPath != newPhoto.beforeWorkPhotoPath) {
-              debugPrint('      🗑️ Deleting old BEFORE photo: ${oldPhoto.beforeWorkPhotoPath}');
+              debugPrint(
+                '      🗑️ Deleting old BEFORE photo: ${oldPhoto.beforeWorkPhotoPath}',
+              );
               try {
-                await photoViewModel.storageService.deletePhoto(oldPhoto.beforeWorkPhotoPath!);
+                await photoViewModel.storageService.deletePhoto(
+                  oldPhoto.beforeWorkPhotoPath!,
+                );
                 debugPrint('      ✅ Old BEFORE photo deleted');
               } catch (e) {
                 debugPrint('      ⚠️ Error deleting old BEFORE photo: $e');
               }
             }
-            
+
             // Comparar photoPath (after)
-            if (oldPhoto.photoPath != null && 
+            if (oldPhoto.photoPath != null &&
                 oldPhoto.photoPath != newPhoto.photoPath) {
-              debugPrint('      🗑️ Deleting old AFTER photo: ${oldPhoto.photoPath}');
+              debugPrint(
+                '      🗑️ Deleting old AFTER photo: ${oldPhoto.photoPath}',
+              );
               try {
-                await photoViewModel.storageService.deletePhoto(oldPhoto.photoPath!);
+                await photoViewModel.storageService.deletePhoto(
+                  oldPhoto.photoPath!,
+                );
                 debugPrint('      ✅ Old AFTER photo deleted');
               } catch (e) {
                 debugPrint('      ⚠️ Error deleting old AFTER photo: $e');
               }
             }
           }
-          
+
           // Ahora eliminar todos los registros de BD
           await photoViewModel.deleteByWorkReportId(report.id);
           debugPrint('   🗑️ Old photo records deleted from DB');
@@ -311,7 +341,9 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
           // Crear nuevos registros con las rutas actuales
           for (final photo in photos) {
             if (photo.hasValidPhotos) {
-              debugPrint('   Creating photo: beforePath=${photo.beforeWorkPhotoPath}, afterPath=${photo.photoPath}');
+              debugPrint(
+                '   Creating photo: beforePath=${photo.beforeWorkPhotoPath}, afterPath=${photo.photoPath}',
+              );
               await photoViewModel.createPhoto(
                 Photo(
                   workReportId: report.id,
@@ -332,28 +364,34 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
           // en las descripciones. Actualizamos las descripciones manteniendo las rutas.
           debugPrint('📝 Photos unchanged - checking descriptions');
           final photoViewModel = ref.read(photoViewModelProvider.notifier);
-          
+
           // Cargar fotos existentes del reporte
           await photoViewModel.loadByWorkReportId(report.id);
           final existingPhotos = ref.read(photoViewModelProvider).photos;
-          
+
           debugPrint('   Existing photos: ${existingPhotos.length}');
           debugPrint('   Form photos: ${photos.length}');
-          
+
           // Actualizar descripciones si cambiaron
           if (photos.isNotEmpty && existingPhotos.isNotEmpty) {
-            for (int i = 0; i < photos.length && i < existingPhotos.length; i++) {
+            for (
+              int i = 0;
+              i < photos.length && i < existingPhotos.length;
+              i++
+            ) {
               final formPhoto = photos[i];
               final existingPhoto = existingPhotos[i];
-              
+
               // Solo actualizar si las descripciones cambiaron
               if (formPhoto.descripcion != existingPhoto.descripcion ||
-                  formPhoto.beforeWorkDescripcion != existingPhoto.beforeWorkDescripcion) {
+                  formPhoto.beforeWorkDescripcion !=
+                      existingPhoto.beforeWorkDescripcion) {
                 debugPrint('   Updating descriptions for photo $i');
                 final updatedPhoto = Photo(
                   id: existingPhoto.id,
                   workReportId: report.id,
-                  beforeWorkPhotoPath: existingPhoto.beforeWorkPhotoPath, // Preserve original
+                  beforeWorkPhotoPath:
+                      existingPhoto.beforeWorkPhotoPath, // Preserve original
                   photoPath: existingPhoto.photoPath, // Preserve original
                   beforeWorkDescripcion: formPhoto.beforeWorkDescripcion,
                   descripcion: formPhoto.descripcion,
@@ -369,13 +407,17 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
           }
         }
       }
-      
+
       // ✅ All async operations complete - NOW we can navigate back safely
       if (context.mounted) {
         debugPrint('');
-        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint(
+          '═══════════════════════════════════════════════════════════',
+        );
         debugPrint('✅ ALL OPERATIONS COMPLETE - Returning to previous page');
-        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint(
+          '═══════════════════════════════════════════════════════════',
+        );
         if (_submittedReport != null) {
           debugPrint('Returning WorkReport:');
           debugPrint('   ID: ${_submittedReport!.id}');
@@ -387,12 +429,18 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
         } else {
           debugPrint('⚠️ _submittedReport is null!');
         }
-        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint(
+          '═══════════════════════════════════════════════════════════',
+        );
         debugPrint('');
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.workReport != null ? 'Report updated successfully' : 'Report created successfully'),
+            content: Text(
+              widget.workReport != null
+                  ? 'Report updated successfully'
+                  : 'Report created successfully',
+            ),
             backgroundColor: Colors.green,
           ),
         );
