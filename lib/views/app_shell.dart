@@ -30,32 +30,23 @@ class AppShell extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          titleSpacing: 0,
-          leading: isLargeScreen
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => scaffoldKey.currentState?.openDrawer(),
-                ),
-          title: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo que transiciona a indicador de conectividad
-                const LogoToConnectivityTransition(),
-                const SizedBox(width: 12),
-                if (isLargeScreen)
-                  Expanded(
-                    child: _navBarItems(context, ref, state, controller),
-                  ),
-              ],
-            ),
+          automaticallyImplyLeading: false, // Disable default leading widget
+          leadingWidth: 72, // Match actions width for symmetry
+          leading: _AppBarLeading(
+            isLargeScreen: isLargeScreen,
+            scaffoldKey: scaffoldKey,
+          ),
+          centerTitle: true, // Force center alignment
+          title: _AppBarTitle(
+            isLargeScreen: isLargeScreen,
+            state: state,
+            controller: controller,
+            ref: ref,
           ),
           actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: _ProfileIcon(),
+            SizedBox(
+              width: 72, // Match leadingWidth for perfect symmetry
+              child: _AppBarActions(),
             ),
           ],
         ),
@@ -154,85 +145,93 @@ class AppShell extends ConsumerWidget {
           ],
         ),
       );
-
-  Widget _navBarItems(
-    BuildContext context,
-    WidgetRef ref,
-    MenuViewState state,
-    app_menu.MenuController controller,
-  ) => Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: state.items
-            .asMap()
-            .entries
-            .map(
-              (entry) => InkWell(
-                onTap: () {
-                  final route = entry.value.route;
-                  if (route != null) {
-                    if (route == '/signin') {
-                      controller.selectMenu(entry.key);
-                      ref.read(authControllerProvider).signOut(context);
-                      context.go(route);
-                    } else {
-                      context.go(route);
-                    }
-                    return;
-                  }
-
-                  switch (entry.value.title.toLowerCase()) {
-                    case 'home':
-                      context.go('/');
-                      break;
-                    case 'reports':
-                      context.go('/reports');
-                      break;
-                    case 'about':
-                      context.go('/about');
-                      break;
-                    case 'contact':
-                      context.go('/contact');
-                      break;
-                    case 'settings':
-                      context.go('/settings');
-                      break;
-                    case 'sign out':
-                      controller.selectMenu(entry.key);
-                      ref.read(authControllerProvider).signOut(context);
-                      context.go('/signin');
-                      break;
-                    default:
-                      controller.selectMenu(entry.key);
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 24.0,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (entry.value.icon != null) ...[
-                        entry.value.icon!,
-                        const SizedBox(width: 8),
-                      ],
-                      Text(
-                        entry.value.title,
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-            .toList(),
-      );
 }
 
-class _ProfileIcon extends ConsumerWidget {
-  const _ProfileIcon();
+// Separated AppBar components for better responsibility separation
+
+/// Leading section of AppBar - handles menu button for mobile
+class _AppBarLeading extends StatelessWidget {
+  final bool isLargeScreen;
+  final GlobalKey<ScaffoldState> scaffoldKey;
+
+  const _AppBarLeading({
+    required this.isLargeScreen,
+    required this.scaffoldKey,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLargeScreen) {
+      // On large screens, provide same width as actions for symmetry
+      return const SizedBox(width: 72);
+    }
+
+    return SizedBox(
+      width: 72,
+      child: IconButton(
+        icon: const Icon(Icons.menu, size: 24),
+        onPressed: () => scaffoldKey.currentState?.openDrawer(),
+      ),
+    );
+  }
+}
+
+/// Title section of AppBar - contains logo and navigation items
+class _AppBarTitle extends ConsumerWidget {
+  final bool isLargeScreen;
+  final MenuViewState state;
+  final app_menu.MenuController controller;
+  final WidgetRef ref;
+
+  const _AppBarTitle({
+    required this.isLargeScreen,
+    required this.state,
+    required this.controller,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min, // Take only needed space
+      children: [
+        // Logo que transiciona a indicador de conectividad
+        const LogoToConnectivityTransition(),
+        if (isLargeScreen) ...[
+          const SizedBox(width: 24),
+          Expanded(
+            child: _NavBarItems(
+              state: state,
+              controller: controller,
+              ref: ref,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Actions section of AppBar - contains profile avatar
+class _AppBarActions extends ConsumerWidget {
+  const _AppBarActions();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: CircleAvatar(
+        radius: 16, // Standard size to match hamburger icon
+        backgroundColor: Colors.grey[900],
+        child: _UserAvatarContent(),
+      ),
+    );
+  }
+}
+
+/// Content of the user avatar
+class _UserAvatarContent extends ConsumerWidget {
+  const _UserAvatarContent();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -253,20 +252,18 @@ class _ProfileIcon extends ConsumerWidget {
     }
 
     final String popupLabel = displayName.isNotEmpty ? displayName : (usernameLocal.isNotEmpty ? usernameLocal : 'Usuario');
-    final String avatarLabel = popupLabel;
+    final String avatarLabel = popupLabel.isNotEmpty ? popupLabel.substring(0, 1).toUpperCase() : 'U';
 
     return PopupMenuButton<ProfileMenuAction>(
-      icon: CircleAvatar(
-        backgroundColor: Colors.grey[900],
-        child: Text(
-          avatarLabel,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+      icon: Text(
+        avatarLabel,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
         ),
       ),
-      offset: const Offset(0, 30),
+      offset: const Offset(0, 56),
       onSelected: (ProfileMenuAction item) => controller.onProfileAction(item, context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       itemBuilder: (BuildContext context) => <PopupMenuEntry<ProfileMenuAction>>[
@@ -304,5 +301,98 @@ class _ProfileIcon extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+/// Navigation items for large screens (desktop/tablet)
+class _NavBarItems extends ConsumerWidget {
+  final MenuViewState state;
+  final app_menu.MenuController controller;
+  final WidgetRef ref;
+
+  const _NavBarItems({
+    required this.state,
+    required this.controller,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: state.items
+          .asMap()
+          .entries
+          .map(
+            (entry) => InkWell(
+              onTap: () => _handleNavItemTap(context, entry, controller, ref),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24.0,
+                  horizontal: 16,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (entry.value.icon != null) ...[
+                      entry.value.icon!,
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      entry.value.title,
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  void _handleNavItemTap(
+    BuildContext context,
+    MapEntry<int, MenuItemModel> entry,
+    app_menu.MenuController controller,
+    WidgetRef ref,
+  ) {
+    final route = entry.value.route;
+    if (route != null) {
+      if (route == '/signin') {
+        controller.selectMenu(entry.key);
+        ref.read(authControllerProvider).signOut(context);
+        context.go(route);
+      } else {
+        context.go(route);
+      }
+      return;
+    }
+
+    switch (entry.value.title.toLowerCase()) {
+      case 'home':
+        context.go('/');
+        break;
+      case 'reports':
+        context.go('/reports');
+        break;
+      case 'about':
+        context.go('/about');
+        break;
+      case 'contact':
+        context.go('/contact');
+        break;
+      case 'settings':
+        context.go('/settings');
+        break;
+      case 'sign out':
+        controller.selectMenu(entry.key);
+        ref.read(authControllerProvider).signOut(context);
+        context.go('/signin');
+        break;
+      default:
+        controller.selectMenu(entry.key);
+    }
   }
 }
