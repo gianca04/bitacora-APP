@@ -5,7 +5,7 @@ import '../providers/connectivity_preferences_provider.dart';
 import '../services/connectivity_service.dart';
 
 /// Widget compacto que muestra el estado de conectividad en el navbar
-/// 
+///
 /// Opciones de visualización:
 /// - Icono solo (compacto)
 /// - Icono + texto (detallado)
@@ -14,11 +14,7 @@ class ConnectivityIndicator extends ConsumerWidget {
   final ConnectivityDisplayMode? mode;
   final bool? showWhenOnline;
 
-  const ConnectivityIndicator({
-    super.key,
-    this.mode,
-    this.showWhenOnline,
-  });
+  const ConnectivityIndicator({super.key, this.mode, this.showWhenOnline});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -64,7 +60,11 @@ class ConnectivityIndicator extends ConsumerWidget {
     }
   }
 
-  Widget _buildIndicator(BuildContext context, ConnectionStatus status, ConnectivityDisplayMode displayMode) {
+  Widget _buildIndicator(
+    BuildContext context,
+    ConnectionStatus status,
+    ConnectivityDisplayMode displayMode,
+  ) {
     switch (displayMode) {
       case ConnectivityDisplayMode.iconOnly:
         return _buildIconOnly(status);
@@ -79,42 +79,42 @@ class ConnectivityIndicator extends ConsumerWidget {
 
   Widget _buildIconOnly(ConnectionStatus status) {
     final (icon, color, tooltip) = _getStatusInfo(status);
-    
+
     return Tooltip(
       message: tooltip,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Icon(
-          icon,
-          color: color,
-          size: 20,
-        ),
+        child: Icon(icon, color: color, size: 20),
       ),
     );
   }
 
   Widget _buildIconWithText(ConnectionStatus status) {
     final (icon, color, tooltip) = _getStatusInfo(status);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
+        color: color.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+        border: Border.all(color: color.withOpacity(0.5), width: 1),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min, // Ajustar al contenido
         children: [
           Icon(icon, color: color, size: 16),
           const SizedBox(width: 6),
-          Text(
-            _getStatusText(status),
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            // Permitir que el texto se ajuste
+            child: Text(
+              _getStatusText(status),
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis, // Evitar desbordamiento
             ),
           ),
         ],
@@ -124,7 +124,7 @@ class ConnectivityIndicator extends ConsumerWidget {
 
   Widget _buildDotOnly(ConnectionStatus status) {
     final (_, color, tooltip) = _getStatusInfo(status);
-    
+
     return Tooltip(
       message: tooltip,
       child: Container(
@@ -148,7 +148,7 @@ class ConnectivityIndicator extends ConsumerWidget {
 
   Widget _buildBadge(ConnectionStatus status) {
     final (icon, color, tooltip) = _getStatusInfo(status);
-    
+
     return Tooltip(
       message: tooltip,
       child: Container(
@@ -180,11 +180,7 @@ class ConnectivityIndicator extends ConsumerWidget {
   (IconData, Color, String) _getStatusInfo(ConnectionStatus status) {
     switch (status) {
       case ConnectionStatus.online:
-        return (
-          Icons.wifi,
-          Colors.green.shade600,
-          'Conectado a Internet',
-        );
+        return (Icons.wifi, Colors.green.shade600, 'Conectado a Internet');
       case ConnectionStatus.noInternet:
         return (
           Icons.wifi_off,
@@ -192,22 +188,18 @@ class ConnectivityIndicator extends ConsumerWidget {
           'Conectado pero sin Internet',
         );
       case ConnectionStatus.offline:
-        return (
-          Icons.signal_wifi_off,
-          Colors.red.shade700,
-          'Sin conexión',
-        );
+        return (Icons.signal_wifi_off, Colors.red.shade700, 'Sin conexión');
     }
   }
 
   String _getStatusText(ConnectionStatus status) {
     switch (status) {
       case ConnectionStatus.online:
-        return 'Online';
+        return 'Conectado';
       case ConnectionStatus.noInternet:
-        return 'Error';
+        return 'Sin Internet';
       case ConnectionStatus.offline:
-        return 'Offline';
+        return 'Desconectado';
     }
   }
 }
@@ -216,13 +208,13 @@ class ConnectivityIndicator extends ConsumerWidget {
 enum ConnectivityDisplayMode {
   /// Solo icono (más compacto)
   iconOnly,
-  
+
   /// Icono con texto (más informativo)
   iconWithText,
-  
+
   /// Solo punto de color (minimalista)
   dotOnly,
-  
+
   /// Badge con fondo de color (destacado)
   badge,
 }
@@ -243,7 +235,8 @@ class ConnectivityDetailCard extends ConsumerWidget {
         child: connectionStatusAsync.when(
           data: (status) => _buildDetailContent(context, status),
           loading: () => _buildDetailContent(context, ConnectionStatus.offline),
-          error: (_, __) => _buildDetailContent(context, ConnectionStatus.offline),
+          error: (_, __) =>
+              _buildDetailContent(context, ConnectionStatus.offline),
         ),
       ),
     );
@@ -252,7 +245,7 @@ class ConnectivityDetailCard extends ConsumerWidget {
   Widget _buildDetailContent(BuildContext context, ConnectionStatus status) {
     final isOnline = status == ConnectionStatus.online;
     final hasNetwork = status != ConnectionStatus.offline;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -271,15 +264,15 @@ class ConnectivityDetailCard extends ConsumerWidget {
                   Text(
                     _getStatusTitle(status),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _getStatusDescription(status),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
@@ -313,7 +306,11 @@ class ConnectivityDetailCard extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.orange.shade700,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -343,17 +340,14 @@ class ConnectivityDetailCard extends ConsumerWidget {
         Icon(icon, size: 20, color: color),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ],
     );

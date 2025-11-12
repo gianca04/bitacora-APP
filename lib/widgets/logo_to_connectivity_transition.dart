@@ -8,11 +8,7 @@ import 'connectivity_indicator.dart';
 
 /// Widget que muestra el logo inicialmente y transiciona al indicador de conectividad
 /// después de 2 segundos o cuando el estado de conexión cambia
-/// 
-/// Lógica:
-/// - Muestra logo por 2 segundos o hasta que cambie el estado
-/// - Después muestra el indicador si hay problema de conexión
-/// - Si está online y showWhenOnline=false, vuelve a mostrar el logo
+
 class LogoToConnectivityTransition extends ConsumerStatefulWidget {
   const LogoToConnectivityTransition({super.key});
 
@@ -81,10 +77,10 @@ class _LogoToConnectivityTransitionState
         double containerWidth;
         switch (mode) {
           case 3: // badge
-            containerWidth = 100;
+            containerWidth = 110;
             break;
           case 1: // iconWithText
-            containerWidth = 100;
+            containerWidth = 120;
             break;
           case 2: // dotOnly
           case 0: // iconOnly
@@ -94,7 +90,7 @@ class _LogoToConnectivityTransitionState
 
         return SizedBox(
           width: containerWidth,
-          height: 28,
+          height: 40,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
             switchInCurve: Curves.easeInOutCubic,
@@ -109,16 +105,16 @@ class _LogoToConnectivityTransitionState
               );
             },
             child: shouldShowIndicator
-                ? SizedBox(
-                    key: ValueKey('indicator-$status'),
-                    // Allow the inner indicator to size itself up to the container
-                    // width. Keep height small to fit the navbar.
-                    width: containerWidth,
-                    child: ConnectivityIndicator(
-                      showWhenOnline: preferences.showWhenOnline,
+                ? Center(
+                    child: SizedBox(
+                      key: ValueKey('indicator-$status'),
+                      width: containerWidth,
+                      child: ConnectivityIndicator(
+                        showWhenOnline: preferences.showWhenOnline,
+                      ),
                     ),
                   )
-                : _buildLogo(),
+                : Center(child: _buildLogo()),
           ),
         );
       },
@@ -132,7 +128,7 @@ class _LogoToConnectivityTransitionState
       key: const ValueKey('logo'),
       child: SvgPicture.asset(
         'assets/images/svg/logo.svg',
-        height: 20,
+        height: 15,
         fit: BoxFit.contain,
       ),
     );

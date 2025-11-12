@@ -43,14 +43,11 @@ class AppShell extends ConsumerWidget {
             controller: controller,
             ref: ref,
           ),
-          actions: [
-            SizedBox(
-              width: 72,
-              child: _AppBarActions(),
-            ),
-          ],
+          actions: [SizedBox(width: 72, child: _AppBarActions())],
         ),
-        drawer: isLargeScreen ? null : _drawer(context, ref, state, controller, scaffoldKey),
+        drawer: isLargeScreen
+            ? null
+            : _drawer(context, ref, state, controller, scaffoldKey),
         body: child,
       ),
     );
@@ -63,84 +60,89 @@ class AppShell extends ConsumerWidget {
     app_menu.MenuController controller,
     GlobalKey<ScaffoldState> scaffoldKey,
   ) => Drawer(
-        child: Column(
-          children: [
-            // Header with SVG logo
-            SizedBox(
-              height: 100,
-              child: DrawerHeader(
-                margin: EdgeInsets.zero,
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset('assets/images/svg/logo.svg', height: 20),
-                    const SizedBox(width: 30),
-                    const ConnectivityIndicator(),
-                  ],
-                ),
+    child: Column(
+      children: [
+        // Header with SVG logo and connectivity indicator
+        Container(
+          width: double.infinity, // Ensure it takes the full width
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, // Align to the left
+            children: [
+              const SizedBox(height: 40), // Add top margin before the logo
+              SvgPicture.asset(
+                'assets/images/svg/logo.svg',
+                height: 30, // Adjust size for better visibility
               ),
-            ),
-            // Navigation items
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: state.items
-                    .asMap()
-                    .entries
-                    .map(
-                      (entry) => ListTile(
-                        leading: entry.value.icon,
-                        selected: entry.key == state.selectedIndex,
-                        onTap: () {
-                          scaffoldKey.currentState?.closeDrawer();
-                          final route = entry.value.route;
-                          if (route != null) {
-                            if (route == '/signin') {
-                              controller.selectMenu(entry.key);
-                              ref.read(authControllerProvider).signOut(context);
-                              context.go(route);
-                            } else {
-                              context.go(route);
-                            }
-                            return;
-                          }
-
-                          // Fallback navigation
-                          switch (entry.value.title.toLowerCase()) {
-                            case 'home':
-                              context.go('/');
-                              break;
-                            case 'reports':
-                              context.go('/reports');
-                              break;
-                            case 'about':
-                              context.go('/about');
-                              break;
-                            case 'contact':
-                              context.go('/contact');
-                              break;
-                            case 'settings':
-                              context.go('/settings');
-                              break;
-                            case 'sign out':
-                              controller.selectMenu(entry.key);
-                              ref.read(authControllerProvider).signOut(context);
-                              context.go('/signin');
-                              break;
-                            default:
-                              controller.selectMenu(entry.key);
-                          }
-                        },
-                        title: Text(entry.value.title),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              const ConnectivityIndicator(),
+            ],
+          ),
         ),
-      );
+        const Divider(), // Divider between header and options
+        // Navigation items
+        Expanded(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: state.items
+                .asMap()
+                .entries
+                .map(
+                  (entry) => ListTile(
+                    leading: entry.value.icon,
+                    selected: entry.key == state.selectedIndex,
+                    onTap: () {
+                      scaffoldKey.currentState?.closeDrawer();
+                      final route = entry.value.route;
+                      if (route != null) {
+                        if (route == '/signin') {
+                          controller.selectMenu(entry.key);
+                          ref.read(authControllerProvider).signOut(context);
+                          context.go(route);
+                        } else {
+                          context.go(route);
+                        }
+                        return;
+                      }
+
+                      // Fallback navigation
+                      switch (entry.value.title.toLowerCase()) {
+                        case 'home':
+                          context.go('/');
+                          break;
+                        case 'reports':
+                          context.go('/reports');
+                          break;
+                        case 'about':
+                          context.go('/about');
+                          break;
+                        case 'contact':
+                          context.go('/contact');
+                          break;
+                        case 'settings':
+                          context.go('/settings');
+                          break;
+                        case 'sign out':
+                          controller.selectMenu(entry.key);
+                          ref.read(authControllerProvider).signOut(context);
+                          context.go('/signin');
+                          break;
+                        default:
+                          controller.selectMenu(entry.key);
+                      }
+                    },
+                    title: Text(
+                      entry.value.title,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // Separated AppBar components for better responsibility separation
@@ -195,11 +197,7 @@ class _AppBarTitle extends ConsumerWidget {
         if (isLargeScreen) ...[
           const SizedBox(width: 24),
           Expanded(
-            child: _NavBarItems(
-              state: state,
-              controller: controller,
-              ref: ref,
-            ),
+            child: _NavBarItems(state: state, controller: controller, ref: ref),
           ),
         ],
       ],
@@ -230,8 +228,12 @@ class _AppBarActions extends ConsumerWidget {
       if (email.isNotEmpty) usernameLocal = email.split('@').first;
     }
 
-    final popupLabel = displayName.isNotEmpty ? displayName : (usernameLocal.isNotEmpty ? usernameLocal : 'Usuario');
-    final avatarLabel = popupLabel.isNotEmpty ? popupLabel.substring(0, 1).toUpperCase() : 'U';
+    final popupLabel = displayName.isNotEmpty
+        ? displayName
+        : (usernameLocal.isNotEmpty ? usernameLocal : 'Usuario');
+    final avatarLabel = popupLabel.isNotEmpty
+        ? popupLabel.substring(0, 1).toUpperCase()
+        : 'U';
 
     return Center(
       child: PopupMenuButton<ProfileMenuAction>(
@@ -277,7 +279,11 @@ class _AppBarActions extends ConsumerWidget {
             value: ProfileMenuAction.signOut,
             child: Row(
               children: [
-                HeroIcon(HeroIcons.arrowLeftOnRectangle, color: Colors.white70, size: 18),
+                HeroIcon(
+                  HeroIcons.arrowLeftOnRectangle,
+                  color: Colors.white70,
+                  size: 18,
+                ),
                 const SizedBox(width: 6),
                 const Flexible(child: Text('Cerrar sesión')),
               ],
