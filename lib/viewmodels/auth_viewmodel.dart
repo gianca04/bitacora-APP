@@ -22,21 +22,22 @@ class AuthState {
   });
 
   const AuthState.initial() : this._(status: AuthStatus.initial);
-  
+
   const AuthState.loading() : this._(status: AuthStatus.loading);
-  
+
   AuthState.authenticated(LoginResponse response)
-      : this._(
-          status: AuthStatus.authenticated,
-          user: response.user,
-          loginResponse: response,
-        );
-  
+    : this._(
+        status: AuthStatus.authenticated,
+        user: response.user,
+        loginResponse: response,
+      );
+
   const AuthState.error(String message)
-      : this._(status: AuthStatus.error, errorMessage: message);
+    : this._(status: AuthStatus.error, errorMessage: message);
 
   /// Check if user is authenticated
-  bool get isAuthenticated => status == AuthStatus.authenticated && user != null;
+  bool get isAuthenticated =>
+      status == AuthStatus.authenticated && user != null;
 
   /// Get token if available
   String? get token => loginResponse?.token?.accessToken;
@@ -64,18 +65,22 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
 
     debugPrint('🔐 AuthViewModel: Iniciando checkAuthStatus');
-    
+
     try {
       debugPrint('🔐 AuthViewModel: Llamando a repository.checkStoredAuth()');
       final storedAuth = await repository.checkStoredAuth();
 
       if (storedAuth != null && storedAuth.isValid) {
-        debugPrint('🔐 AuthViewModel: Token válido encontrado, actualizando estado a authenticated');
+        debugPrint(
+          '🔐 AuthViewModel: Token válido encontrado, actualizando estado a authenticated',
+        );
         state = AuthState.authenticated(storedAuth);
         _isInitialized = true;
         return true;
       } else {
-        debugPrint('🔐 AuthViewModel: No se encontró token válido, estado inicial');
+        debugPrint(
+          '🔐 AuthViewModel: No se encontró token válido, estado inicial',
+        );
         state = const AuthState.initial();
         _isInitialized = true;
         return false;
@@ -97,7 +102,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
   }) async {
     debugPrint('🔄 AuthViewModel: Cambiando estado a loading');
     state = const AuthState.loading();
-    
+
     try {
       debugPrint('🔄 AuthViewModel: Llamando a repository.signIn()');
       final loginResponse = await repository.signIn(
@@ -105,24 +110,30 @@ class AuthViewModel extends StateNotifier<AuthState> {
         password: password,
         rememberMe: rememberMe,
       );
-      
-      debugPrint('🔄 AuthViewModel: Respuesta recibida, success: ${loginResponse.success}');
-      
+
+      debugPrint(
+        '🔄 AuthViewModel: Respuesta recibida, success: ${loginResponse.success}',
+      );
+
       // Check if login was successful
       if (!loginResponse.success) {
-        debugPrint('❌ AuthViewModel: Login no exitoso - ${loginResponse.message}');
+        debugPrint(
+          '❌ AuthViewModel: Login no exitoso - ${loginResponse.message}',
+        );
         state = AuthState.error(loginResponse.message);
         return false;
       }
-      
+
       // Validate that we have all required data
       if (!loginResponse.isValid) {
         debugPrint('❌ AuthViewModel: Respuesta inválida del servidor');
         state = const AuthState.error('Respuesta incompleta del servidor');
         return false;
       }
-      
-      debugPrint('🔄 AuthViewModel: Login exitoso, actualizando estado a authenticated');
+
+      debugPrint(
+        '🔄 AuthViewModel: Login exitoso, actualizando estado a authenticated',
+      );
       state = AuthState.authenticated(loginResponse);
       debugPrint('✅ AuthViewModel: Estado actualizado exitosamente');
       return true;

@@ -14,6 +14,7 @@ import '../views/work_report_form_page.dart';
 import '../views/work_report_detail_page.dart';
 import '../models/work_report.dart';
 import '../views/home_page.dart';
+import '../views/loading_page.dart';
 
 /// Notifier for GoRouter to listen to auth state changes
 class _GoRouterNotifier extends ChangeNotifier {
@@ -52,6 +53,9 @@ final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _GoRouterNotifier(ref);
   
   return GoRouter(
+    // Use signin as initial location and redirect to /loading only while
+    // auth initialization is in progress. This avoids getting stuck on
+    // /loading if something prevents the redirect from running.
     initialLocation: '/signin',
     debugLogDiagnostics: true,
     refreshListenable: notifier,
@@ -124,18 +128,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'signin',
         builder: (context, state) => const SignInPage(),
       ),
+      // Lightweight loading page shown while authInitProvider is resolving
+      GoRoute(
+        path: '/loading',
+        name: 'loading',
+        builder: (context, state) => const LoadingPage(),
+      ),
     ],
     redirect: (context, state) {
       final authInit = ref.read(authInitProvider);
       final authState = ref.read(authViewModelProvider);
       final isSignInPage = state.matchedLocation == '/signin';
+      final isLoadingPage = state.matchedLocation == '/loading';
 
       debugPrint('🔀 Router redirect: location=${state.matchedLocation}, authInit=${authInit.asData?.value}, authStatus=${authState.status}, isSignInPage=$isSignInPage');
 
-      // Wait for auth initialization to complete
+      // While authInitProvider is resolving, show the loading page
       if (authInit.isLoading) {
-        debugPrint('🔀 Router: Still initializing auth, staying on current location');
-        return null; // Don't redirect while checking stored auth
+        debugPrint('🔀 Router: Auth init loading, redirecting to /loading');
+        return isLoadingPage ? null : '/loading';
       }
 
       // If initialization failed, go to signin
@@ -149,13 +160,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       debugPrint('🔀 Router: isAuthenticated=$isAuthenticated');
 
-      // Authenticated users should not see signin page
-      if (isAuthenticated && isSignInPage) {
-        debugPrint('🔀 Router: ✅ Authenticated user on signin page, redirecting to home');
+      // Authenticated users should not see signin or loading pages
+      if (isAuthenticated && (isSignInPage || isLoadingPage)) {
+        debugPrint('🔀 Router: ✅ Authenticated user on signin/loading page, redirecting to home');
         return '/';
       }
 
-      // Unauthenticated users can only access signin page
+      // Unauthenticated users should go to signin once initialization finished
       if (!isAuthenticated && !isSignInPage) {
         debugPrint('🔀 Router: ❌ Unauthenticated user trying to access protected route, redirecting to signin');
         return '/signin';
