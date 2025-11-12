@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
                      android:maxSdkVersion="32" />
     
+    <!-- Permiso para vibración -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    
     <!-- Indicar que la app usa la cámara pero no es obligatoria -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />

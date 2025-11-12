@@ -4,6 +4,7 @@ import '../providers/connectivity_provider.dart';
 import '../services/connectivity_service.dart';
 import 'cupertino_notification_banner.dart';
 import 'package:flutter/services.dart';
+import 'package:vibration/vibration.dart';
 import '../providers/connectivity_preferences_provider.dart';
 
 /// Widget global que monitorea la conexión y muestra notificaciones Cupertino
@@ -44,7 +45,7 @@ class _NoConnectionBannerState extends ConsumerState<NoConnectionBanner> {
     );
   }
 
-  void _handleStatusChange(BuildContext context, ConnectionStatus status) {
+  void _handleStatusChange(BuildContext context, ConnectionStatus status) async {
     // Leer preferencias del usuario para comportamiento háptico/sonoro
     final prefs = ref.read(connectivityPreferencesNotifierProvider);
     // Solo mostrar notificación si el estado cambió
@@ -79,22 +80,41 @@ class _NoConnectionBannerState extends ConsumerState<NoConnectionBanner> {
           showLogo: true,
           duration: const Duration(seconds: 4),
         );
-        // Vibrar si la preferencia está activada
-        try {
-          if (prefs.vibrateOnDisconnect) {
-            // HapticFeedback.vibrate es seguro en la mayoría de plataformas
-            HapticFeedback.vibrate();
-          }
-          if (prefs.playSoundOnChange) {
+        // Vibrar si la preferencia está activada (sin bloquear)
+        if (prefs.vibrateOnDisconnect) {
+          _performVibration();
+        }
+        if (prefs.playSoundOnChange) {
+          try {
             SystemSound.play(SystemSoundType.alert);
+          } catch (e) {
+            print('Error reproduciendo sonido: $e');
           }
-        } catch (e) {
-          // Algunas plataformas (web/desktop) pueden no soportar haptics
         }
       }
     }
     
     _previousStatus = status;
+  }
+
+  /// Ejecuta la vibración de forma asíncrona sin bloquear la UI
+  void _performVibration() async {
+    try {
+      final hasVibrator = await Vibration.hasVibrator();
+      if (hasVibrator == true) {
+        await Vibration.vibrate(duration: 300);
+      } else {
+        HapticFeedback.heavyImpact();
+      }
+    } catch (e) {
+      print('Error al vibrar: $e');
+      // Fallback silencioso a haptic feedback básico
+      try {
+        HapticFeedback.heavyImpact();
+      } catch (_) {
+        // Si incluso HapticFeedback falla, no hacer nada
+      }
+    }
   }
 
   String _getMessageForStatus(ConnectionStatus status) {

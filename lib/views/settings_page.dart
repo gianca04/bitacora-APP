@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vibration/vibration.dart';
 import '../widgets/connectivity_indicator.dart';
 import '../providers/connectivity_preferences_provider.dart';
 import '../models/connectivity_preferences.dart';
@@ -284,13 +286,28 @@ class SettingsPage extends ConsumerWidget {
                 color: preferences.isEnabled ? null : Colors.grey,
               ),
             ),
-            trailing: CupertinoSwitch(
-              value: preferences.vibrateOnDisconnect,
-              onChanged: preferences.isEnabled
-                  ? (value) async {
-                      await notifier.updatePreference(vibrateOnDisconnect: value);
-                    }
-                  : null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Botón de prueba
+                if (preferences.isEnabled && preferences.vibrateOnDisconnect)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: IconButton(
+                      icon: const Icon(Icons.play_arrow, size: 20),
+                      tooltip: 'Probar vibración',
+                      onPressed: () => _testVibration(context),
+                    ),
+                  ),
+                CupertinoSwitch(
+                  value: preferences.vibrateOnDisconnect,
+                  onChanged: preferences.isEnabled
+                      ? (value) async {
+                          await notifier.updatePreference(vibrateOnDisconnect: value);
+                        }
+                      : null,
+                ),
+              ],
             ),
           ),
           
@@ -374,6 +391,71 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
+  /// Método para probar la vibración
+  void _testVibration(BuildContext context) async {
+    try {
+      // Verificar si el dispositivo tiene vibrador
+      final hasVibrator = await Vibration.hasVibrator();
+      if (hasVibrator == true) {
+        // Vibración de 300ms
+        await Vibration.vibrate(duration: 300);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Vibración funcionando correctamente'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // Fallback a haptic feedback
+        HapticFeedback.heavyImpact();
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ No se detectó vibrador, usando feedback háptico'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error al probar vibración: $e');
+      
+      // Último recurso: haptic feedback básico
+      try {
+        HapticFeedback.heavyImpact();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Error con vibración: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Este dispositivo no soporta vibración'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   void _showDisplayModeDialog(
     BuildContext context,
     WidgetRef ref,
@@ -387,41 +469,142 @@ class SettingsPage extends ConsumerWidget {
       {'value': 3, 'name': 'Badge', 'icon': Icons.badge},
     ];
 
-    showCupertinoModalPopup<void>(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        title: const Text('Estilo de visualización'),
-        message: const Text('Selecciona cómo quieres ver el indicador de conexión'),
-        actions: modes.map((mode) {
-          final isSelected = preferences.displayMode == mode['value'];
-          return CupertinoActionSheetAction(
-            onPressed: () async {
-              await notifier.updatePreference(displayMode: mode['value'] as int);
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            },
-            isDefaultAction: isSelected,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(mode['icon'] as IconData, size: 20),
-                const SizedBox(width: 12),
-                Text(mode['name'] as String),
-                if (isSelected) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.check_circle, color: CupertinoColors.activeBlue, size: 20),
-                ],
-              ],
-            ),
-          );
-        }).toList(),
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          isDestructiveAction: false,
-          child: const Text('Cancelar'),
-        ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Title
+              Text(
+                'Estilo de visualización',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Subtitle
+              Text(
+                'Selecciona cómo quieres ver el indicador de conexión',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Options
+              ...modes.map((mode) {
+                final isSelected = preferences.displayMode == mode['value'];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () async {
+                        await notifier.updatePreference(displayMode: mode['value'] as int);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: isSelected 
+                                ? Colors.green.shade600
+                                : Colors.grey.shade300,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          color: isSelected 
+                              ? Colors.green.shade50
+                              : Colors.transparent,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              mode['icon'] as IconData,
+                              size: 24,
+                              color: isSelected 
+                                  ? Colors.green.shade600
+                                  : Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                mode['name'] as String,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  color: isSelected 
+                                      ? Colors.green.shade600
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.green.shade600,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+              
+              const SizedBox(height: 16),
+              
+              // Cancel button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancelar',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              
+              // Bottom safe area
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        );
+      },
     );
   }
 }
