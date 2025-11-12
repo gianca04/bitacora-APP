@@ -166,6 +166,7 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.visibility),
             title: const Text('Mostrar indicador'),
+            
             subtitle: const Text('Muestra el estado de conexión en el navbar'),
             trailing: CupertinoSwitch(
               value: preferences.isEnabled,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
+import '../widgets/connectivity_indicator.dart';
 import '../viewmodels/auth_viewmodel.dart'; // For AuthStatus enum
 import '../providers/app_providers.dart';
 
@@ -39,7 +39,23 @@ class _SignInPageState extends ConsumerState<SignInPage> {
           ),
           // Capa opcional para oscurecer el fondo y mejorar contraste
           Container(color: Colors.black.withOpacity(0.3)),
+
           // Widget del formulario centrado
+
+          // Indicador de estado de conexión
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8.0, right: 16.0),
+              child: Align(
+                alignment: Alignment.topRight,
+                child: ConnectivityIndicator(
+                  mode: ConnectivityDisplayMode.iconOnly,
+                  showWhenOnline: null,
+                ),
+              ),
+            ),
+          ),
+
           Center(
             child: _SignInForm(
               formKey: _formKey,
@@ -244,8 +260,8 @@ class _SignInForm extends StatelessWidget {
                         ? null
                         : () async {
                             if (formKey.currentState?.validate() ?? false) {
-                              debugPrint('🔵 SignInPage: Iniciando sign in');
-                              
+                              //debugPrint('🔵 SignInPage: Iniciando sign in');
+
                               final success = await controller.signIn(
                                 context: context,
                                 email: emailController.text.trim(),
@@ -253,8 +269,10 @@ class _SignInForm extends StatelessWidget {
                                 rememberMe: rememberMe,
                               );
 
-                              debugPrint('🔵 SignInPage: Sign in completado, success: $success');
-                              
+                              //debugPrint(
+                              //  '🔵 SignInPage: Sign in completado, success: $success',
+                              //);
+
                               // Router will handle navigation automatically
                               // No manual navigation needed
                             }
@@ -294,7 +312,11 @@ class _SignInForm extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
