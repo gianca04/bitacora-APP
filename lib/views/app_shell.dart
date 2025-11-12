@@ -30,13 +30,13 @@ class AppShell extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          automaticallyImplyLeading: false, // Disable default leading widget
-          leadingWidth: 72, // Match actions width for symmetry
+          automaticallyImplyLeading: false,
+          leadingWidth: 72,
           leading: _AppBarLeading(
             isLargeScreen: isLargeScreen,
             scaffoldKey: scaffoldKey,
           ),
-          centerTitle: true, // Force center alignment
+          centerTitle: true,
           title: _AppBarTitle(
             isLargeScreen: isLargeScreen,
             state: state,
@@ -45,7 +45,7 @@ class AppShell extends ConsumerWidget {
           ),
           actions: [
             SizedBox(
-              width: 72, // Match leadingWidth for perfect symmetry
+              width: 72,
               child: _AppBarActions(),
             ),
           ],
@@ -76,7 +76,6 @@ class AppShell extends ConsumerWidget {
                   children: [
                     SvgPicture.asset('assets/images/svg/logo.svg', height: 20),
                     const SizedBox(width: 30),
-                    // Indicador de conectividad en el drawer (usa preferencias del usuario)
                     const ConnectivityIndicator(),
                   ],
                 ),
@@ -94,12 +93,10 @@ class AppShell extends ConsumerWidget {
                         leading: entry.value.icon,
                         selected: entry.key == state.selectedIndex,
                         onTap: () {
-                          // Prefer using explicit route provided by the MenuItemModel.
-                          scaffoldKey.currentState?.openEndDrawer();
+                          scaffoldKey.currentState?.closeDrawer();
                           final route = entry.value.route;
                           if (route != null) {
                             if (route == '/signin') {
-                              // Treat signin route as a sign-out action in the menu
                               controller.selectMenu(entry.key);
                               ref.read(authControllerProvider).signOut(context);
                               context.go(route);
@@ -109,7 +106,7 @@ class AppShell extends ConsumerWidget {
                             return;
                           }
 
-                          // Fallback: handle older title-based navigation
+                          // Fallback navigation
                           switch (entry.value.title.toLowerCase()) {
                             case 'home':
                               context.go('/');
@@ -133,7 +130,6 @@ class AppShell extends ConsumerWidget {
                               break;
                             default:
                               controller.selectMenu(entry.key);
-                              scaffoldKey.currentState?.openEndDrawer();
                           }
                         },
                         title: Text(entry.value.title),
@@ -162,7 +158,6 @@ class _AppBarLeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLargeScreen) {
-      // On large screens, provide same width as actions for symmetry
       return const SizedBox(width: 72);
     }
 
@@ -194,9 +189,8 @@ class _AppBarTitle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min, // Take only needed space
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Logo que transiciona a indicador de conectividad
         const LogoToConnectivityTransition(),
         if (isLargeScreen) ...[
           const SizedBox(width: 24),
@@ -219,25 +213,10 @@ class _AppBarActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: CircleAvatar(
-        radius: 16, // Standard size to match hamburger icon
-        backgroundColor: Colors.grey[900],
-        child: _UserAvatarContent(),
-      ),
-    );
-  }
-}
-
-/// Content of the user avatar
-class _UserAvatarContent extends ConsumerWidget {
-  const _UserAvatarContent();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final app_menu.MenuController controller = ref.read(menuControllerProvider);
+    final controller = ref.read(menuControllerProvider);
     final authState = ref.watch(authViewModelProvider);
 
+    // Extract user info
     String displayName = '';
     String usernameLocal = '';
     if (authState.user != null) {
@@ -251,55 +230,61 @@ class _UserAvatarContent extends ConsumerWidget {
       if (email.isNotEmpty) usernameLocal = email.split('@').first;
     }
 
-    final String popupLabel = displayName.isNotEmpty ? displayName : (usernameLocal.isNotEmpty ? usernameLocal : 'Usuario');
-    final String avatarLabel = popupLabel.isNotEmpty ? popupLabel.substring(0, 1).toUpperCase() : 'U';
+    final popupLabel = displayName.isNotEmpty ? displayName : (usernameLocal.isNotEmpty ? usernameLocal : 'Usuario');
+    final avatarLabel = popupLabel.isNotEmpty ? popupLabel.substring(0, 1).toUpperCase() : 'U';
 
-    return PopupMenuButton<ProfileMenuAction>(
-      icon: Text(
-        avatarLabel,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
+    return Center(
+      child: PopupMenuButton<ProfileMenuAction>(
+        icon: CircleAvatar(
+          radius: 16,
+          backgroundColor: Colors.grey[900],
+          child: Text(
+            avatarLabel,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
         ),
+        offset: const Offset(0, 56),
+        onSelected: (item) => controller.onProfileAction(item, context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: ProfileMenuAction.account,
+            child: Row(
+              children: [
+                HeroIcon(HeroIcons.userCircle, color: Colors.white70, size: 20),
+                const SizedBox(width: 6),
+                Flexible(child: Text(popupLabel)),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: ProfileMenuAction.settings,
+            child: Row(
+              children: [
+                HeroIcon(HeroIcons.cog, color: Colors.white70, size: 18),
+                const SizedBox(width: 6),
+                const Flexible(child: Text('Configuración')),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: ProfileMenuAction.signOut,
+            child: Row(
+              children: [
+                HeroIcon(HeroIcons.arrowLeftOnRectangle, color: Colors.white70, size: 18),
+                const SizedBox(width: 6),
+                const Flexible(child: Text('Cerrar sesión')),
+              ],
+            ),
+          ),
+        ],
       ),
-      offset: const Offset(0, 56),
-      onSelected: (ProfileMenuAction item) => controller.onProfileAction(item, context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<ProfileMenuAction>>[
-        PopupMenuItem<ProfileMenuAction>(
-          value: ProfileMenuAction.account,
-          child: Row(
-            children: [
-              HeroIcon(HeroIcons.userCircle, color: Colors.white70, size: 20),
-              const SizedBox(width: 6),
-              Flexible(child: Text(popupLabel)),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<ProfileMenuAction>(
-          value: ProfileMenuAction.settings,
-          child: Row(
-            children: [
-              HeroIcon(HeroIcons.cog, color: Colors.white70, size: 18),
-              const SizedBox(width: 6),
-              const Flexible(child: Text('Configuración')),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<ProfileMenuAction>(
-          value: ProfileMenuAction.signOut,
-          child: Row(
-            children: [
-              HeroIcon(HeroIcons.arrowLeftOnRectangle, color: Colors.white70, size: 18),
-              const SizedBox(width: 6),
-              const Flexible(child: Text('Cerrar sesión')),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
