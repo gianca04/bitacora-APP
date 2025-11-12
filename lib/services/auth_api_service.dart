@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import '../config/dio_config.dart';
 import '../models/login_response.dart';
 
@@ -19,7 +20,7 @@ class AuthApiService {
     required String password,
   }) async {
     try {
-      print('🔐 Iniciando login para: $email');
+      debugPrint('🔐 Iniciando login para: $email');
       
       final response = await _dio.post(
         '/login',
@@ -29,26 +30,26 @@ class AuthApiService {
         },
       );
 
-      print('🔐 Respuesta recibida, parseando...');
+      debugPrint('🔐 Respuesta recibida, parseando...');
       
       // Parse response
       final loginResponse = LoginResponse.fromJson(
         response.data as Map<String, dynamic>,
       );
 
-      print('🔐 LoginResponse parseado: $loginResponse');
+      debugPrint('🔐 LoginResponse parseado: $loginResponse');
 
       // Return response as-is, let the caller decide what to do based on success field
       // Don't throw exception here - the response is valid, just not successful
       return loginResponse;
     } on DioException catch (e) {
       // Handle Dio errors
-      print('❌ DioException en login: ${e.toString()}');
+      debugPrint('❌ DioException en login: ${e.toString()}');
       final errorMessage = DioConfig.handleError(e);
       throw AuthException(errorMessage);
     } catch (e) {
       // Handle other errors
-      print('❌ Error en login: ${e.toString()}');
+      debugPrint('❌ Error en login: ${e.toString()}');
       if (e is AuthException) rethrow;
       throw AuthException('Error al procesar la solicitud: ${e.toString()}');
     }

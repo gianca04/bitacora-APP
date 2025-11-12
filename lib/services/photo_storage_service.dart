@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:image/image.dart' as img;
@@ -72,7 +73,7 @@ class PhotoStorageService {
       }
     } catch (e) {
       // Log error but don't throw - deletion failure shouldn't block other operations
-      print('Error deleting photo: $e');
+      debugPrint('Error deleting photo: $e');
     }
   }
 
@@ -121,12 +122,12 @@ class PhotoStorageService {
           final filePath = file.path;
           if (!referencedPhotoPaths.contains(filePath)) {
             await file.delete();
-            print('Deleted orphaned photo: $filePath');
+            debugPrint('Deleted orphaned photo: $filePath');
           }
         }
       }
     } catch (e) {
-      print('Error cleaning up orphaned photos: $e');
+      debugPrint('Error cleaning up orphaned photos: $e');
     }
   }
 

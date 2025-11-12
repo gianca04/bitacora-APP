@@ -97,9 +97,7 @@ final authViewModelProvider =
 /// This ensures stored authentication is checked before the router is built
 final authInitProvider = FutureProvider<bool>((ref) async {
   final authViewModel = ref.watch(authViewModelProvider.notifier);
-  print('🔐 authInitProvider: Checking stored authentication...');
   final hasAuth = await authViewModel.checkAuthStatus();
-  print('🔐 authInitProvider: Auth check completed. Has auth: $hasAuth');
   return hasAuth;
 });
 

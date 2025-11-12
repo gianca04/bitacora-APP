@@ -244,7 +244,7 @@ class _SignInForm extends StatelessWidget {
                         ? null
                         : () async {
                             if (formKey.currentState?.validate() ?? false) {
-                              print('🔵 SignInPage: Iniciando sign in');
+                              debugPrint('🔵 SignInPage: Iniciando sign in');
                               
                               final success = await controller.signIn(
                                 context: context,
@@ -253,7 +253,7 @@ class _SignInForm extends StatelessWidget {
                                 rememberMe: rememberMe,
                               );
 
-                              print('🔵 SignInPage: Sign in completado, success: $success');
+                              debugPrint('🔵 SignInPage: Sign in completado, success: $success');
                               
                               // Router will handle navigation automatically
                               // No manual navigation needed

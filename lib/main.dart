@@ -10,15 +10,15 @@ void main() async {
   // Ensure Flutter bindings are initialized before async operations
   WidgetsFlutterBinding.ensureInitialized();
   
-  print('🚀 Inicializando base de datos Isar...');
+  debugPrint('🚀 Inicializando base de datos Isar...');
   // Initialize Isar database before running the app
   await IsarService().initialize();
-  print('✅ Base de datos Isar inicializada');
+  debugPrint('✅ Base de datos Isar inicializada');
   
-  print('🚀 Inicializando ConnectivityService...');
+  debugPrint('🚀 Inicializando ConnectivityService...');
   // Initialize connectivity monitoring service
   await ConnectivityService().initialize();
-  print('✅ ConnectivityService inicializado');
+  debugPrint('✅ ConnectivityService inicializado');
   
   runApp(const ProviderScope(child: MyApp()));
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 import '../models/work_report.dart';
 import '../models/photo.dart';
@@ -32,10 +33,12 @@ class _WorkReportFormState extends State<WorkReportForm> {
   final _descriptionController = TextEditingController();
   final _employeeIdController = TextEditingController();
   final _projectIdController = TextEditingController();
-  final _suggestionsController = TextEditingController();
-  final _toolsController = TextEditingController();
-  final _personnelController = TextEditingController();
-  final _materialsController = TextEditingController();
+  
+  // Rich text editors using QuillController
+  late quill.QuillController _suggestionsController;
+  late quill.QuillController _toolsController;
+  late quill.QuillController _personnelController;
+  late quill.QuillController _materialsController;
 
   DateTime _startTime = DateTime.now();
   DateTime _endTime = DateTime.now();
@@ -57,6 +60,12 @@ class _WorkReportFormState extends State<WorkReportForm> {
   @override
   void initState() {
     super.initState();
+    // Initialize QuillControllers
+    _suggestionsController = quill.QuillController.basic();
+    _toolsController = quill.QuillController.basic();
+    _personnelController = quill.QuillController.basic();
+    _materialsController = quill.QuillController.basic();
+    
     _initializeForm();
     _loadExistingPhotos();
   }
@@ -68,14 +77,35 @@ class _WorkReportFormState extends State<WorkReportForm> {
       _descriptionController.text = report.description;
       _employeeIdController.text = report.employeeId.toString();
       _projectIdController.text = report.projectId.toString();
-      _suggestionsController.text = report.suggestions ?? '';
-      _toolsController.text = report.tools ?? '';
-      _personnelController.text = report.personnel ?? '';
-      _materialsController.text = report.materials ?? '';
+      
+      // Load rich text fields from Delta JSON (if stored) or plain text fallback
+      _loadQuillField(_suggestionsController, report.suggestions);
+      _loadQuillField(_toolsController, report.tools);
+      _loadQuillField(_personnelController, report.personnel);
+      _loadQuillField(_materialsController, report.materials);
+      
       _startTime = report.startTime;
       _endTime = report.endTime;
       _reportDate = report.reportDate;
     }
+  }
+  
+  void _loadQuillField(quill.QuillController controller, String? data) {
+    if (data == null || data.isEmpty) return;
+    
+    try {
+      // Try to parse as Delta JSON
+      final delta = quill.Document.fromJson(jsonDecode(data));
+      controller.document = delta;
+    } catch (e) {
+      // Fallback: treat as plain text
+      controller.document = quill.Document()..insert(0, data);
+    }
+  }
+  
+  String? _serializeQuillField(quill.QuillController controller) {
+    if (controller.document.isEmpty()) return null;
+    return jsonEncode(controller.document.toDelta().toJson());
   }
 
   void _loadExistingPhotos() {
@@ -240,28 +270,28 @@ class _WorkReportFormState extends State<WorkReportForm> {
 
           // Sección: Detalles adicionales
           _buildSectionTitle('Detalles adicionales'),
-          _buildTextField(
+          _buildQuillEditor(
             controller: _suggestionsController,
             label: 'Sugerencias',
-            maxLines: 2,
+            minHeight: 120,
           ),
           const SizedBox(height: 16),
-          _buildTextField(
+          _buildQuillEditor(
             controller: _toolsController,
             label: 'Herramientas utilizadas',
-            maxLines: 2,
+            minHeight: 120,
           ),
           const SizedBox(height: 16),
-          _buildTextField(
+          _buildQuillEditor(
             controller: _personnelController,
             label: 'Personal',
-            maxLines: 2,
+            minHeight: 120,
           ),
           const SizedBox(height: 16),
-          _buildTextField(
+          _buildQuillEditor(
             controller: _materialsController,
             label: 'Materiales',
-            maxLines: 2,
+            minHeight: 120,
           ),
           const SizedBox(height: 24),
 
@@ -447,6 +477,39 @@ class _WorkReportFormState extends State<WorkReportForm> {
     );
   }
 
+  Widget _buildQuillEditor({
+    required quill.QuillController controller,
+    required String label,
+    double minHeight = 150,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          constraints: BoxConstraints(minHeight: minHeight),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: quill.QuillEditor(
+            scrollController: ScrollController(),
+            focusNode: FocusNode(),
+            controller: controller,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDateTimePicker({
     required String label,
     required DateTime value,
@@ -538,10 +601,10 @@ class _WorkReportFormState extends State<WorkReportForm> {
         startTime: _startTime,
         endTime: _endTime,
         reportDate: _reportDate,
-        suggestions: _suggestionsController.text.isEmpty ? null : _suggestionsController.text,
-        tools: _toolsController.text.isEmpty ? null : _toolsController.text,
-        personnel: _personnelController.text.isEmpty ? null : _personnelController.text,
-        materials: _materialsController.text.isEmpty ? null : _materialsController.text,
+        suggestions: _serializeQuillField(_suggestionsController),
+        tools: _serializeQuillField(_toolsController),
+        personnel: _serializeQuillField(_personnelController),
+        materials: _serializeQuillField(_materialsController),
         supervisorSignature: supervisorSig,
         managerSignature: managerSig,
       );

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 
@@ -129,14 +130,14 @@ class PhotoViewModel extends StateNotifier<PhotoState> {
           try {
             await storageService.deletePhoto(photo.photoPath!);
           } catch (e) {
-            print('⚠️ Error deleting after photo file: $e');
+            debugPrint('⚠️ Error deleting after photo file: $e');
           }
         }
         if (photo.beforeWorkPhotoPath != null && photo.beforeWorkPhotoPath!.isNotEmpty) {
           try {
             await storageService.deletePhoto(photo.beforeWorkPhotoPath!);
           } catch (e) {
-            print('⚠️ Error deleting before photo file: $e');
+            debugPrint('⚠️ Error deleting before photo file: $e');
           }
         }
         await loadAll();
@@ -175,7 +176,7 @@ class PhotoViewModel extends StateNotifier<PhotoState> {
             await storageService.deletePhoto(photo.photoPath!);
           } catch (e) {
             // Log but continue deleting other photos
-            print('⚠️ Error deleting after photo: $e');
+            debugPrint('⚠️ Error deleting after photo: $e');
           }
         }
         if (photo.beforeWorkPhotoPath != null && photo.beforeWorkPhotoPath!.isNotEmpty) {
@@ -183,7 +184,7 @@ class PhotoViewModel extends StateNotifier<PhotoState> {
             await storageService.deletePhoto(photo.beforeWorkPhotoPath!);
           } catch (e) {
             // Log but continue deleting other photos
-            print('⚠️ Error deleting before photo: $e');
+            debugPrint('⚠️ Error deleting before photo: $e');
           }
         }
       }

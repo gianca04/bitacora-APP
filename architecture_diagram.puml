@@ -1,0 +1,288 @@
+@startuml Bitácora App Architecture
+!define RECTANGLE class
+
+title Bitácora Mobile App - System Architecture Diagram
+subtitle Flutter Application with Clean Architecture Pattern
+
+!theme aws-orange
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam roundcorner 20
+skinparam shadowing false
+
+skinparam package {
+  BackgroundColor<<UI>> #E8F4F8
+  BorderColor<<UI>> #2196F3
+  BackgroundColor<<ViewModel>> #F3E5F5
+  BorderColor<<ViewModel>> #9C27B0
+  BackgroundColor<<Repository>> #E8F5E8
+  BorderColor<<Repository>> #4CAF50
+  BackgroundColor<<Service>> #FFF3E0
+  BorderColor<<Service>> #FF9800
+  BackgroundColor<<Data>> #FFEBEE
+  BorderColor<<Data>> #F44336
+  BackgroundColor<<External>> #F5F5F5
+  BorderColor<<External>> #757575
+}
+
+' ==============================================
+' PRESENTATION LAYER
+' ==============================================
+package "Presentation Layer" <<UI>> {
+  package "Views (UI Components)" {
+    [HomePage] as home
+    [SignInPage] as signin
+    [WorkReportListPage] as reportlist
+    [WorkReportFormPage] as reportform
+    [WorkReportDetailPage] as reportdetail
+    [ProfilePage] as profile
+    [SettingsPage] as settings
+    [AppShell] as shell
+  }
+  
+  package "Widgets (Reusable Components)" {
+    [NoConnectionBanner] as nobanner
+    [ResponsiveNavbar] as navbar
+    [CustomWidgets] as widgets
+  }
+  
+  package "Navigation" {
+    [AppRouter] as router
+    [GoRouter] as gorouter
+  }
+}
+
+' ==============================================
+' BUSINESS LOGIC LAYER
+' ==============================================
+package "Business Logic Layer" <<ViewModel>> {
+  package "ViewModels (State Management)" {
+    [AuthViewModel] as authvm
+    [WorkReportViewModel] as reportvm
+    [PhotoViewModel] as photovm
+    [UserViewModel] as uservm
+    [EmployeeViewModel] as empvm
+    [MenuViewModel] as menuvm
+  }
+  
+  package "Controllers (Optional Facade)" {
+    [AuthController] as authctrl
+    [WorkReportController] as reportctrl
+    [PhotoController] as photoctrl
+    [UserController] as userctrl
+    [EmployeeController] as empctrl
+  }
+  
+  package "Providers (Dependency Injection)" {
+    [AppProviders] as providers
+    note right of providers
+      Riverpod Providers:
+      - StateNotifierProvider
+      - Provider
+      - FutureProvider
+    end note
+  }
+}
+
+' ==============================================
+' DOMAIN LAYER
+' ==============================================
+package "Domain Layer" <<Repository>> {
+  package "Repositories (Business Logic)" {
+    [AuthRepository] as authrepo
+    [WorkReportRepository] as reportrepo
+    [PhotoRepository] as photorepo
+    [UserRepository] as userrepo
+    [EmployeeRepository] as emprepo
+    [MenuRepository] as menurepo
+  }
+  
+  package "Models (Domain Entities)" {
+    [User] as usermodel
+    [Employee] as empmodel
+    [WorkReport] as reportmodel
+    [Photo] as photomodel
+    [AuthUser] as authmodel
+    [LoginResponse] as loginmodel
+    [TokenResponse] as tokenmodel
+  }
+}
+
+' ==============================================
+' DATA/SERVICE LAYER
+' ==============================================
+package "Data & Service Layer" <<Service>> {
+  package "Local Services" {
+    [IsarService] as isar
+    [TokenStorageService] as tokenstorage
+    [PhotoStorageService] as photostorage
+    [ConnectivityService] as connectivity
+    [StorageService] as storage
+  }
+  
+  package "API Services" {
+    [AuthApiService] as authapi
+    [UserService] as userservice
+    [EmployeeService] as empservice
+    [ApiCallHelper] as apihelper
+  }
+  
+  package "Configuration" {
+    [DioConfig] as dioconfig
+    [AppConfig] as appconfig
+  }
+}
+
+' ==============================================
+' EXTERNAL SYSTEMS & INFRASTRUCTURE
+' ==============================================
+package "External Systems" <<External>> {
+  database "Isar Database\n(Local NoSQL)" as isardb {
+    folder "Collections" {
+      [users]
+      [employees] 
+      [work_reports]
+      [photos]
+      [connectivity_preferences]
+    }
+  }
+  
+  cloud "REST API\n(Backend Services)" as restapi {
+    [Authentication API]
+    [User Management API]
+    [Employee API]
+    [File Upload API]
+  }
+  
+  node "Device Storage" as devicestorage {
+    [Secure Storage]
+    [Local File System]
+    [Camera/Gallery]
+  }
+  
+  cloud "Network Services" as network {
+    [Connectivity Monitor]
+    [Internet Checker]
+    [HTTP Client (Dio)]
+  }
+}
+
+' ==============================================
+' ARCHITECTURAL PATTERNS ANNOTATIONS
+' ==============================================
+note top of home
+  **MVVM Pattern**
+  - Views observe ViewModels
+  - Reactive UI updates
+  - ref.watch() & ref.listen()
+end note
+
+note top of authvm
+  **State Management**
+  - StateNotifier<AuthState>
+  - Immutable State
+  - Status Enum Pattern
+end note
+
+note top of authrepo
+  **Repository Pattern**
+  - Abstraction over data sources
+  - Business logic coordination
+  - Dependency injection
+end note
+
+note top of isar
+  **Service Layer**
+  - Singleton pattern
+  - Database initialization
+  - Connection management
+end note
+
+' ==============================================
+' RELATIONSHIPS & DATA FLOW
+' ==============================================
+
+' UI Layer Dependencies
+home --> authvm : ref.watch()
+signin --> authvm : ref.read()
+reportlist --> reportvm : ref.watch()
+reportform --> reportvm : ref.read()
+shell --> providers : ProviderScope
+
+router --> authvm : Route Guards
+nobanner --> connectivity : Connection Status
+
+' ViewModel Dependencies
+authvm --> authrepo : Business Logic
+reportvm --> reportrepo : CRUD Operations
+photovm --> photorepo : Media Management
+uservm --> userrepo : User Operations
+empvm --> emprepo : Employee Operations
+
+' Optional Controller Layer
+authctrl --> authvm : Facade
+reportctrl --> reportvm : Simplification
+photoctrl --> photovm : Helper Methods
+
+' Repository Dependencies
+authrepo --> authapi : Authentication
+authrepo --> tokenstorage : Token Management
+reportrepo --> isar : Local Persistence
+photorepo --> photostorage : File Management
+userrepo --> isar : User Data
+emprepo --> isar : Employee Data
+
+' Service Dependencies
+isar --> isardb : Database Connection
+authapi --> dioconfig : HTTP Configuration
+photostorage --> devicestorage : File System
+connectivity --> network : Network Status
+tokenstorage --> devicestorage : Secure Storage
+
+' External API Connections
+authapi --> restapi : HTTP Requests
+apihelper --> restapi : Generic API Calls
+dioconfig --> network : HTTP Client
+
+' ==============================================
+' TECHNOLOGY STACK ANNOTATIONS
+' ==============================================
+note bottom of isardb
+  **Local Database**
+  - NoSQL Document DB
+  - Offline-first approach
+  - Auto-generated schemas
+  - ACID transactions
+end note
+
+note bottom of restapi
+  **Backend Integration**
+  - RESTful APIs
+  - JWT Authentication
+  - File upload support
+  - Error handling
+end note
+
+legend right
+  |= Technology Stack =|
+  | **Framework** | Flutter 3.9+ |
+  | **State Management** | Riverpod 2.3+ |
+  | **Navigation** | GoRouter 14.6+ |
+  | **Local Database** | Isar 3.1+ |
+  | **HTTP Client** | Dio 5.9+ |
+  | **Storage** | flutter_secure_storage |
+  | **Architecture** | Clean Architecture + MVVM |
+  | **Patterns** | Repository, Service Layer, DI |
+  
+  |= Layer Responsibilities =|
+  | **Presentation** | UI Components, Navigation |
+  | **Business Logic** | State Management, Controllers |
+  | **Domain** | Business Rules, Models |
+  | **Data/Service** | Data Access, External APIs |
+end legend
+
+footer Generated by Software Engineer - Clean Architecture Pattern Implementation
+
+@enduml

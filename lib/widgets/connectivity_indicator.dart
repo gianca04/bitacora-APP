@@ -238,7 +238,6 @@ class ConnectivityDetailCard extends ConsumerWidget {
 
     // Mostrar el estado actual sin loading intermedio
     return Card(
-      margin: const EdgeInsets.all(16),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: connectionStatusAsync.when(
@@ -264,7 +263,7 @@ class ConnectivityDetailCard extends ConsumerWidget {
               size: 32,
               color: _getStatusColor(status),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

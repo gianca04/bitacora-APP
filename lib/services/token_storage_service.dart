@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/token_response.dart';
@@ -29,7 +30,7 @@ class TokenStorageService {
 
   /// Saves the token to secure storage
   Future<void> saveToken(TokenResponse token) async {
-    print('💾 TokenStorage: Guardando token...');
+    debugPrint('💾 TokenStorage: Guardando token...');
     try {
       await Future.wait([
         _storage.write(key: _keyAccessToken, value: token.accessToken),
@@ -41,13 +42,13 @@ class TokenStorageService {
       ]).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          print('⏱️ TokenStorage: Timeout guardando token');
+          debugPrint('⏱️ TokenStorage: Timeout guardando token');
           throw TimeoutException('Timeout guardando token');
         },
       );
-      print('✅ TokenStorage: Token guardado exitosamente');
+      debugPrint('✅ TokenStorage: Token guardado exitosamente');
     } catch (e) {
-      print('❌ TokenStorage: Error guardando token - $e');
+      debugPrint('❌ TokenStorage: Error guardando token - $e');
       rethrow;
     }
   }
@@ -59,7 +60,7 @@ class TokenStorageService {
     required String userEmail,
     int? employeeId,
   }) async {
-    print('💾 TokenStorage: Guardando información de usuario...');
+    debugPrint('💾 TokenStorage: Guardando información de usuario...');
     try {
       await Future.wait([
         _storage.write(key: _keyUserId, value: userId.toString()),
@@ -70,13 +71,13 @@ class TokenStorageService {
       ]).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          print('⏱️ TokenStorage: Timeout guardando info de usuario');
+          debugPrint('⏱️ TokenStorage: Timeout guardando info de usuario');
           throw TimeoutException('Timeout guardando información de usuario');
         },
       );
-      print('✅ TokenStorage: Información de usuario guardada exitosamente');
+      debugPrint('✅ TokenStorage: Información de usuario guardada exitosamente');
     } catch (e) {
-      print('❌ TokenStorage: Error guardando info de usuario - $e');
+      debugPrint('❌ TokenStorage: Error guardando info de usuario - $e');
       rethrow;
     }
   }
@@ -93,7 +94,7 @@ class TokenStorageService {
       ]).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          print('⏱️ TokenStorage: Timeout leyendo token');
+          debugPrint('⏱️ TokenStorage: Timeout leyendo token');
           return [null, null, null];
         },
       );
@@ -115,7 +116,7 @@ class TokenStorageService {
       );
     } catch (e) {
       // If parsing fails or any error occurs, return null
-      print('❌ TokenStorage: Error obteniendo token - $e');
+      debugPrint('❌ TokenStorage: Error obteniendo token - $e');
       return null;
     }
   }
@@ -129,7 +130,7 @@ class TokenStorageService {
       );
       return value != null ? int.tryParse(value) : null;
     } catch (e) {
-      print('❌ TokenStorage: Error obteniendo userId - $e');
+      debugPrint('❌ TokenStorage: Error obteniendo userId - $e');
       return null;
     }
   }
@@ -142,7 +143,7 @@ class TokenStorageService {
         onTimeout: () => null,
       );
     } catch (e) {
-      print('❌ TokenStorage: Error obteniendo userName - $e');
+      debugPrint('❌ TokenStorage: Error obteniendo userName - $e');
       return null;
     }
   }
@@ -155,7 +156,7 @@ class TokenStorageService {
         onTimeout: () => null,
       );
     } catch (e) {
-      print('❌ TokenStorage: Error obteniendo userEmail - $e');
+      debugPrint('❌ TokenStorage: Error obteniendo userEmail - $e');
       return null;
     }
   }
@@ -169,7 +170,7 @@ class TokenStorageService {
       );
       return value != null ? int.tryParse(value) : null;
     } catch (e) {
-      print('❌ TokenStorage: Error obteniendo employeeId - $e');
+      debugPrint('❌ TokenStorage: Error obteniendo employeeId - $e');
       return null;
     }
   }
@@ -185,7 +186,7 @@ class TokenStorageService {
   /// Deletes all stored authentication data
   Future<void> deleteAll() async {
     try {
-      print('🗑️ TokenStorage: Eliminando todos los datos de autenticación...');
+      debugPrint('🗑️ TokenStorage: Eliminando todos los datos de autenticación...');
       await Future.wait([
         _storage.delete(key: _keyAccessToken),
         _storage.delete(key: _keyTokenType),
@@ -197,13 +198,13 @@ class TokenStorageService {
       ]).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          print('⏱️ TokenStorage: Timeout eliminando datos');
+          debugPrint('⏱️ TokenStorage: Timeout eliminando datos');
           return [];
         },
       );
-      print('✅ TokenStorage: Datos eliminados exitosamente');
+      debugPrint('✅ TokenStorage: Datos eliminados exitosamente');
     } catch (e) {
-      print('❌ TokenStorage: Error eliminando datos - $e');
+      debugPrint('❌ TokenStorage: Error eliminando datos - $e');
       rethrow;
     }
   }
@@ -220,7 +221,7 @@ class TokenStorageService {
         onTimeout: () => [],
       );
     } catch (e) {
-      print('❌ TokenStorage: Error eliminando token - $e');
+      debugPrint('❌ TokenStorage: Error eliminando token - $e');
       rethrow;
     }
   }

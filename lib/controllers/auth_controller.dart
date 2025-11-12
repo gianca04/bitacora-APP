@@ -29,7 +29,7 @@ class AuthController {
     required String password,
     bool rememberMe = false,
   }) async {
-    print('🎮 AuthController: Iniciando signIn');
+    debugPrint('🎮 AuthController: Iniciando signIn');
     
     final success = await ref.read(authViewModelProvider.notifier).signIn(
           email: email,
@@ -37,13 +37,13 @@ class AuthController {
           rememberMe: rememberMe,
         );
 
-    print('🎮 AuthController: signIn completado, success: $success');
+    debugPrint('🎮 AuthController: signIn completado, success: $success');
 
     final state = ref.read(authViewModelProvider);
 
     // Use WidgetsBinding to ensure we show notification after frame
     if (success) {
-      print('🎮 AuthController: Mostrando notificación de éxito');
+      debugPrint('🎮 AuthController: Mostrando notificación de éxito');
       // Delay to ensure context is still valid
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
@@ -58,7 +58,7 @@ class AuthController {
               ),
             );
           } catch (e, st) {
-            print('❌ AuthController: Error mostrando SnackBar de éxito: $e\n$st');
+            debugPrint('❌ AuthController: Error mostrando SnackBar de éxito: $e\n$st');
           }
 
           // Navigate to home after successful sign in. Use GoRouter to ensure
@@ -68,14 +68,14 @@ class AuthController {
             context.go('/');
           } catch (e) {
             // If go() fails for any reason, fall back to Navigator
-            print('⚠️ AuthController: go() failed, falling back to Navigator: $e');
+            debugPrint('⚠️ AuthController: go() failed, falling back to Navigator: $e');
             Navigator.of(context).pushReplacementNamed('/');
           }
         }
       });
-      print('🎮 AuthController: Notificación programada');
+      debugPrint('🎮 AuthController: Notificación programada');
     } else {
-      print('🎮 AuthController: Mostrando notificación de error');
+      debugPrint('🎮 AuthController: Mostrando notificación de error');
       // Show error notification immediately
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
@@ -88,13 +88,13 @@ class AuthController {
               ),
             );
           } catch (e, st) {
-            print('❌ AuthController: Error mostrando SnackBar de error: $e\n$st');
+            debugPrint('❌ AuthController: Error mostrando SnackBar de error: $e\n$st');
           }
         }
       });
     }
 
-    print('🎮 AuthController: Retornando success: $success');
+    debugPrint('🎮 AuthController: Retornando success: $success');
     return success;
   }
 

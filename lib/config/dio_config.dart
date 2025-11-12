@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 import '../services/token_storage_service.dart';
 
@@ -62,10 +63,10 @@ class DioConfig {
           } else if (token != null && token.isExpired) {
             // Token expired - could implement refresh here
             // For now, just log and continue
-            print('⚠️ Token expired, consider implementing refresh');
+            debugPrint('⚠️ Token expired, consider implementing refresh');
           }
         } catch (e) {
-          print('⚠️ Error retrieving token: $e');
+          debugPrint('⚠️ Error retrieving token: $e');
         }
 
         return handler.next(options);
@@ -76,9 +77,9 @@ class DioConfig {
           // Token might be invalid, clear storage
           try {
             await tokenStorage.deleteAll();
-            print('🗑️ Cleared invalid token from storage');
+            debugPrint('🗑️ Cleared invalid token from storage');
           } catch (e) {
-            print('⚠️ Error clearing token: $e');
+            debugPrint('⚠️ Error clearing token: $e');
           }
         }
         return handler.next(error);
@@ -91,24 +92,24 @@ class DioConfig {
     return InterceptorsWrapper(
       onRequest: (options, handler) {
         // Log request
-        print('🚀 REQUEST[${options.method}] => ${options.uri}');
+        debugPrint('🚀 REQUEST[${options.method}] => ${options.uri}');
         if (options.data != null) {
-          print('📤 Data: ${options.data}');
+          debugPrint('📤 Data: ${options.data}');
         }
         return handler.next(options);
       },
       onResponse: (response, handler) {
         // Log response
-        print('✅ RESPONSE[${response.statusCode}] => ${response.requestOptions.uri}');
-        print('📥 Data: ${response.data}');
+        debugPrint('✅ RESPONSE[${response.statusCode}] => ${response.requestOptions.uri}');
+        debugPrint('📥 Data: ${response.data}');
         return handler.next(response);
       },
       onError: (error, handler) {
         // Log error
-        print('❌ ERROR[${error.response?.statusCode}] => ${error.requestOptions.uri}');
-        print('📛 Message: ${error.message}');
+        debugPrint('❌ ERROR[${error.response?.statusCode}] => ${error.requestOptions.uri}');
+        debugPrint('📛 Message: ${error.message}');
         if (error.response?.data != null) {
-          print('📛 Data: ${error.response?.data}');
+          debugPrint('📛 Data: ${error.response?.data}');
         }
         return handler.next(error);
       },

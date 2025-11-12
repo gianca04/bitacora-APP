@@ -5,7 +5,6 @@ import '../views/profile_page.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../providers/app_providers.dart';
 import '../views/app_shell.dart';
-import '../views/responsive_navbar_page.dart';
 import '../views/sign_in_page.dart';
 import '../views/about_page.dart';
 import '../views/contact_page.dart';
@@ -22,12 +21,12 @@ class _GoRouterNotifier extends ChangeNotifier {
   bool _initialized = false;
 
   _GoRouterNotifier(this._ref) {
-    print('🔔 GoRouterNotifier: constructed');
+    debugPrint('🔔 GoRouterNotifier: constructed');
     // Listen to auth state changes
     _ref.listen<AuthState>(
       authViewModelProvider,
       (previous, next) {
-        print('🔔 GoRouterNotifier: Auth state changed from ${previous?.status} to ${next.status}');
+        debugPrint('🔔 GoRouterNotifier: Auth state changed from ${previous?.status} to ${next.status}');
         notifyListeners();
       },
     );
@@ -36,7 +35,7 @@ class _GoRouterNotifier extends ChangeNotifier {
     _ref.listen<AsyncValue<bool>>(
       authInitProvider,
       (previous, next) {
-        print('🔔 GoRouterNotifier: Auth init changed, loading: ${next.isLoading}, hasValue: ${next.hasValue}, error: ${next.hasError}');
+        debugPrint('🔔 GoRouterNotifier: Auth init changed, loading: ${next.isLoading}, hasValue: ${next.hasValue}, error: ${next.hasError}');
         if (next.hasValue && !_initialized) {
           _initialized = true;
           notifyListeners();
@@ -131,39 +130,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authViewModelProvider);
       final isSignInPage = state.matchedLocation == '/signin';
 
-      print('🔀 Router redirect: location=${state.matchedLocation}, authInit=${authInit.asData?.value}, authStatus=${authState.status}, isSignInPage=$isSignInPage');
+      debugPrint('🔀 Router redirect: location=${state.matchedLocation}, authInit=${authInit.asData?.value}, authStatus=${authState.status}, isSignInPage=$isSignInPage');
 
       // Wait for auth initialization to complete
       if (authInit.isLoading) {
-        print('🔀 Router: Still initializing auth, staying on current location');
+        debugPrint('🔀 Router: Still initializing auth, staying on current location');
         return null; // Don't redirect while checking stored auth
       }
 
       // If initialization failed, go to signin
       if (authInit.hasError) {
-        print('🔀 Router: Auth initialization error, redirecting to signin');
+        debugPrint('🔀 Router: Auth initialization error, redirecting to signin');
         return isSignInPage ? null : '/signin';
       }
 
       // Check authentication status
       final isAuthenticated = authState.status == AuthStatus.authenticated;
 
-      print('🔀 Router: isAuthenticated=$isAuthenticated');
+      debugPrint('🔀 Router: isAuthenticated=$isAuthenticated');
 
       // Authenticated users should not see signin page
       if (isAuthenticated && isSignInPage) {
-        print('🔀 Router: ✅ Authenticated user on signin page, redirecting to home');
+        debugPrint('🔀 Router: ✅ Authenticated user on signin page, redirecting to home');
         return '/';
       }
 
       // Unauthenticated users can only access signin page
       if (!isAuthenticated && !isSignInPage) {
-        print('🔀 Router: ❌ Unauthenticated user trying to access protected route, redirecting to signin');
+        debugPrint('🔀 Router: ❌ Unauthenticated user trying to access protected route, redirecting to signin');
         return '/signin';
       }
 
       // Allow access
-      print('🔀 Router: ✓ Allowing access to ${state.matchedLocation}');
+      debugPrint('🔀 Router: ✓ Allowing access to ${state.matchedLocation}');
       return null;
     },
   );

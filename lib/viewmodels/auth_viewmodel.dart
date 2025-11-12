@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/auth_user.dart';
@@ -58,29 +59,29 @@ class AuthViewModel extends StateNotifier<AuthState> {
   Future<bool> checkAuthStatus() async {
     // Prevent multiple initializations
     if (_isInitialized) {
-      print('🔐 AuthViewModel: Ya inicializado, retornando estado actual');
+      debugPrint('🔐 AuthViewModel: Ya inicializado, retornando estado actual');
       return state.isAuthenticated;
     }
 
-    print('🔐 AuthViewModel: Iniciando checkAuthStatus');
+    debugPrint('🔐 AuthViewModel: Iniciando checkAuthStatus');
     
     try {
-      print('🔐 AuthViewModel: Llamando a repository.checkStoredAuth()');
+      debugPrint('🔐 AuthViewModel: Llamando a repository.checkStoredAuth()');
       final storedAuth = await repository.checkStoredAuth();
 
       if (storedAuth != null && storedAuth.isValid) {
-        print('🔐 AuthViewModel: Token válido encontrado, actualizando estado a authenticated');
+        debugPrint('🔐 AuthViewModel: Token válido encontrado, actualizando estado a authenticated');
         state = AuthState.authenticated(storedAuth);
         _isInitialized = true;
         return true;
       } else {
-        print('🔐 AuthViewModel: No se encontró token válido, estado inicial');
+        debugPrint('🔐 AuthViewModel: No se encontró token válido, estado inicial');
         state = const AuthState.initial();
         _isInitialized = true;
         return false;
       }
     } catch (e) {
-      print('❌ AuthViewModel: Error checking auth status: $e');
+      debugPrint('❌ AuthViewModel: Error checking auth status: $e');
       state = const AuthState.initial();
       _isInitialized = true;
       return false;
@@ -94,45 +95,45 @@ class AuthViewModel extends StateNotifier<AuthState> {
     required String password,
     bool rememberMe = false,
   }) async {
-    print('🔄 AuthViewModel: Cambiando estado a loading');
+    debugPrint('🔄 AuthViewModel: Cambiando estado a loading');
     state = const AuthState.loading();
     
     try {
-      print('🔄 AuthViewModel: Llamando a repository.signIn()');
+      debugPrint('🔄 AuthViewModel: Llamando a repository.signIn()');
       final loginResponse = await repository.signIn(
         email: email,
         password: password,
         rememberMe: rememberMe,
       );
       
-      print('🔄 AuthViewModel: Respuesta recibida, success: ${loginResponse.success}');
+      debugPrint('🔄 AuthViewModel: Respuesta recibida, success: ${loginResponse.success}');
       
       // Check if login was successful
       if (!loginResponse.success) {
-        print('❌ AuthViewModel: Login no exitoso - ${loginResponse.message}');
+        debugPrint('❌ AuthViewModel: Login no exitoso - ${loginResponse.message}');
         state = AuthState.error(loginResponse.message);
         return false;
       }
       
       // Validate that we have all required data
       if (!loginResponse.isValid) {
-        print('❌ AuthViewModel: Respuesta inválida del servidor');
+        debugPrint('❌ AuthViewModel: Respuesta inválida del servidor');
         state = const AuthState.error('Respuesta incompleta del servidor');
         return false;
       }
       
-      print('🔄 AuthViewModel: Login exitoso, actualizando estado a authenticated');
+      debugPrint('🔄 AuthViewModel: Login exitoso, actualizando estado a authenticated');
       state = AuthState.authenticated(loginResponse);
-      print('✅ AuthViewModel: Estado actualizado exitosamente');
+      debugPrint('✅ AuthViewModel: Estado actualizado exitosamente');
       return true;
     } on AuthException catch (e) {
       // Handle authentication-specific errors
-      print('❌ AuthViewModel: AuthException - ${e.message}');
+      debugPrint('❌ AuthViewModel: AuthException - ${e.message}');
       state = AuthState.error(e.message);
       return false;
     } catch (e) {
       // Handle any other errors
-      print('❌ AuthViewModel: Error inesperado - ${e.toString()}');
+      debugPrint('❌ AuthViewModel: Error inesperado - ${e.toString()}');
       state = AuthState.error('Error inesperado: ${e.toString()}');
       return false;
     }
@@ -145,7 +146,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
       await repository.signOut(state.token);
     } catch (e) {
       // Ignore logout errors, still clear local state
-      print('Error during signOut: $e');
+      debugPrint('Error during signOut: $e');
     } finally {
       // Always clear local state
       state = const AuthState.initial();

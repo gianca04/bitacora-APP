@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+
 import '../models/auth_user.dart';
 import '../models/login_response.dart';
 import '../services/auth_api_service.dart';
@@ -28,27 +30,27 @@ class AuthRepository {
     bool rememberMe = false,
   }) async {
     try {
-      print('📦 AuthRepository: Llamando a AuthApiService.login()');
+      debugPrint('📦 AuthRepository: Llamando a AuthApiService.login()');
       final response = await _authApiService.login(
         email: email,
         password: password,
       );
 
-      print('📦 AuthRepository: Respuesta recibida de API');
+      debugPrint('📦 AuthRepository: Respuesta recibida de API');
 
       // Save to secure storage if login successful and rememberMe is true
       if (response.isValid && rememberMe) {
-        print('💾 Guardando datos de autenticación (rememberMe: true)');
+        debugPrint('💾 Guardando datos de autenticación (rememberMe: true)');
         await _saveAuthData(response);
-        print('✅ Datos de autenticación guardados');
+        debugPrint('✅ Datos de autenticación guardados');
       } else {
-        print('⏭️ No guardando datos (rememberMe: $rememberMe, isValid: ${response.isValid})');
+        debugPrint('⏭️ No guardando datos (rememberMe: $rememberMe, isValid: ${response.isValid})');
       }
 
-      print('✅ AuthRepository: Retornando respuesta');
+      debugPrint('✅ AuthRepository: Retornando respuesta');
       return response;
     } catch (e) {
-      print('❌ AuthRepository: Error en signIn - ${e.toString()}');
+      debugPrint('❌ AuthRepository: Error en signIn - ${e.toString()}');
       // Re-throw to be handled by the ViewModel/Controller
       rethrow;
     }
@@ -56,13 +58,13 @@ class AuthRepository {
 
   /// Saves authentication data to secure storage
   Future<void> _saveAuthData(LoginResponse response) async {
-    print('💾 _saveAuthData: Guardando token...');
+    debugPrint('💾 _saveAuthData: Guardando token...');
     if (response.token != null) {
       await _tokenStorage.saveToken(response.token!);
-      print('✅ Token guardado');
+      debugPrint('✅ Token guardado');
     }
 
-    print('💾 _saveAuthData: Guardando información de usuario...');
+    debugPrint('💾 _saveAuthData: Guardando información de usuario...');
     if (response.user != null) {
       await _tokenStorage.saveUserInfo(
         userId: response.user!.id,
@@ -70,7 +72,7 @@ class AuthRepository {
         userEmail: response.user!.email,
         employeeId: response.employee?.id,
       );
-      print('✅ Información de usuario guardada');
+      debugPrint('✅ Información de usuario guardada');
     }
   }
 
@@ -79,18 +81,18 @@ class AuthRepository {
   /// Returns [LoginResponse] with stored data if token is valid
   /// Returns null if no valid token exists
   Future<LoginResponse?> checkStoredAuth() async {
-    print('🔐 AuthRepository: Verificando token almacenado...');
+    debugPrint('🔐 AuthRepository: Verificando token almacenado...');
     try {
       final token = await _tokenStorage.getToken();
 
       if (token == null || token.isExpired) {
-        print('🔐 AuthRepository: Token no encontrado o expirado');
+        debugPrint('🔐 AuthRepository: Token no encontrado o expirado');
         // Clean up expired token
         await _tokenStorage.deleteAll();
         return null;
       }
 
-      print('🔐 AuthRepository: Token válido encontrado, recuperando datos de usuario...');
+      debugPrint('🔐 AuthRepository: Token válido encontrado, recuperando datos de usuario...');
       // Retrieve user info
       final userId = await _tokenStorage.getUserId();
       final userName = await _tokenStorage.getUserName();
@@ -99,13 +101,13 @@ class AuthRepository {
       // final employeeId = await _tokenStorage.getEmployeeId();
 
       if (userId == null || userName == null || userEmail == null) {
-        print('🔐 AuthRepository: Datos de usuario incompletos, limpiando...');
+        debugPrint('🔐 AuthRepository: Datos de usuario incompletos, limpiando...');
         // Incomplete data, clean up
         await _tokenStorage.deleteAll();
         return null;
       }
 
-      print('🔐 AuthRepository: ✅ Autenticación restaurada para usuario: $userName ($userEmail)');
+      debugPrint('🔐 AuthRepository: ✅ Autenticación restaurada para usuario: $userName ($userEmail)');
       // Construct LoginResponse from stored data
       return LoginResponse(
         success: true,
@@ -119,7 +121,7 @@ class AuthRepository {
         employee: null, // Employee data can be fetched later if needed
       );
     } catch (e) {
-      print('❌ AuthRepository: Error verificando token: $e');
+      debugPrint('❌ AuthRepository: Error verificando token: $e');
       // If any error occurs, clean up and return null
       await _tokenStorage.deleteAll();
       return null;
@@ -157,7 +159,7 @@ class AuthRepository {
       }
     } catch (e) {
       // Ignore logout errors, still clear local storage
-      print('Error during logout: $e');
+      debugPrint('Error during logout: $e');
     } finally {
       // Always delete stored authentication data
       await _tokenStorage.deleteAll();
