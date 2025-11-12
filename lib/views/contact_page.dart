@@ -94,10 +94,12 @@ class _ProfileInfoRow extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: Text(
           item.value.toString(),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      Text(item.title, style: Theme.of(context).textTheme.bodySmall),
+      Text(item.title, style: Theme.of(context).textTheme.bodyMedium),
     ],
   );
 }

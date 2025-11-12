@@ -234,16 +234,14 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
                     children: [
                       Text(
                         _report.name,
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Reporte #${_report.id}',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),
                       ),
@@ -287,14 +285,13 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.access_time, color: Color(0xFF2A8D8D)),
-                SizedBox(width: 8),
+                const Icon(Icons.access_time, color: Color(0xFF2A8D8D)),
+                const SizedBox(width: 8),
                 Text(
                   'Horario de Trabajo',
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -330,8 +327,7 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
             Center(
               child: Text(
                 'Duración: ${_calculateDuration()}',
-                style: TextStyle(
-                  fontSize: 14,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: Colors.grey[700],
                 ),
@@ -354,14 +350,13 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.info_outline, color: Color(0xFF2A8D8D)),
-                SizedBox(width: 8),
+                const Icon(Icons.info_outline, color: Color(0xFF2A8D8D)),
+                const SizedBox(width: 8),
                 Text(
                   'Detalles Adicionales',
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -390,10 +385,9 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
           children: [
             const Icon(Icons.photo_library, color: Color(0xFF2A8D8D)),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Fotografías del Trabajo',
-              style: TextStyle(
-                fontSize: 18,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -433,9 +427,9 @@ class _WorkReportDetailPageState extends ConsumerState<WorkReportDetailPage> {
                 children: [
                   const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Error al cargar las fotos',
-                    style: TextStyle(fontSize: 16, color: Colors.red),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.red),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(

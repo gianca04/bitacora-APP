@@ -130,14 +130,14 @@ class _SignInForm extends StatelessWidget {
                   'Ingrese sus credenciales',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
-                  style: const TextStyle(color: Colors.white),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingrese un correo electrónico';
@@ -150,7 +150,7 @@ class _SignInForm extends StatelessWidget {
                   },
                   decoration: InputDecoration(
                     labelText: 'Correo Electrónico',
-                    labelStyle: const TextStyle(color: Colors.white),
+                    labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
                     prefixIcon: const Icon(
                       Icons.email_outlined,
                       color: Colors.white,
@@ -177,7 +177,7 @@ class _SignInForm extends StatelessWidget {
                   controller: passwordController,
                   obscureText: !isPasswordVisible,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
-                  style: const TextStyle(color: Colors.white),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingrese una contraseña';
@@ -189,7 +189,7 @@ class _SignInForm extends StatelessWidget {
                   },
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
-                    labelStyle: const TextStyle(color: Colors.white),
+                    labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
                     prefixIcon: const Icon(
                       Icons.lock_outline_rounded,
                       color: Colors.white,
@@ -239,9 +239,9 @@ class _SignInForm extends StatelessWidget {
                     controlAffinity: ListTileControlAffinity.leading,
                     value: rememberMe,
                     onChanged: (v) => onRememberMeChanged(v ?? false),
-                    title: const Text(
+                    title: Text(
                       'Recordarme',
-                      style: TextStyle(color: Colors.white),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
                     ),
                   ),
                 ),
@@ -288,9 +288,9 @@ class _SignInForm extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               'Ingresar',
-                              style: TextStyle(
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -321,9 +321,8 @@ class _SignInForm extends StatelessWidget {
                           Expanded(
                             child: Text(
                               authState.errorMessage ?? 'Error desconocido',
-                              style: const TextStyle(
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.red,
-                                fontSize: 13,
                               ),
                             ),
                           ),
