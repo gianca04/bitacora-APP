@@ -123,7 +123,7 @@ class SettingsPage extends ConsumerWidget {
               const ListTile(
                 leading: Icon(Icons.info_outline),
                 title: Text('Versión'),
-                subtitle: Text('1.0.0+1'),
+                subtitle: Text('0.1.1'),
               ),
               const Divider(height: 1),
               ListTile(

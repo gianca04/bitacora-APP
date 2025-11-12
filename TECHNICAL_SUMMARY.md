@@ -318,5 +318,5 @@ La implementación de las tablas User y Employee está **100% completa y lista p
 ---
 
 *Implementado el 4 de Noviembre de 2025*
-*Versión: 1.0.0*
+*Versión: 0.1.1*
 *Autor: GitHub Copilot*

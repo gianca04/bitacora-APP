@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/connectivity_provider.dart';
 import '../services/connectivity_service.dart';
 import 'cupertino_notification_banner.dart';
+import 'package:flutter/services.dart';
+import '../providers/connectivity_preferences_provider.dart';
 
 /// Widget global que monitorea la conexión y muestra notificaciones Cupertino
 /// cuando el estado cambia (en lugar del banner viejo de Material Design)
@@ -43,6 +45,8 @@ class _NoConnectionBannerState extends ConsumerState<NoConnectionBanner> {
   }
 
   void _handleStatusChange(BuildContext context, ConnectionStatus status) {
+    // Leer preferencias del usuario para comportamiento háptico/sonoro
+    final prefs = ref.read(connectivityPreferencesNotifierProvider);
     // Solo mostrar notificación si el estado cambió
     if (_previousStatus != null && _previousStatus != status) {
       // Conexión restaurada
@@ -54,6 +58,17 @@ class _NoConnectionBannerState extends ConsumerState<NoConnectionBanner> {
           showLogo: true,
           duration: const Duration(seconds: 2),
         );
+        // Reproducir sonido/haptics opcional si está habilitado
+        try {
+          if (prefs.playSoundOnChange) {
+            SystemSound.play(SystemSoundType.alert);
+          }
+          // Optionally vibrate on restore only if explicitly desired
+          // (vibrateOnDisconnect is intended for disconnects, so we don't
+          // vibrate here unless a separate preference exists)
+        } catch (e) {
+          // Ignorar errores de haptics en plataformas que no soportan
+        }
       }
       // Se perdió la conexión
       else if (status != ConnectionStatus.online && _previousStatus == ConnectionStatus.online) {
@@ -64,6 +79,18 @@ class _NoConnectionBannerState extends ConsumerState<NoConnectionBanner> {
           showLogo: true,
           duration: const Duration(seconds: 4),
         );
+        // Vibrar si la preferencia está activada
+        try {
+          if (prefs.vibrateOnDisconnect) {
+            // HapticFeedback.vibrate es seguro en la mayoría de plataformas
+            HapticFeedback.vibrate();
+          }
+          if (prefs.playSoundOnChange) {
+            SystemSound.play(SystemSoundType.alert);
+          }
+        } catch (e) {
+          // Algunas plataformas (web/desktop) pueden no soportar haptics
+        }
       }
     }
     
