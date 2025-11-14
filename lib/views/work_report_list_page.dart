@@ -7,6 +7,7 @@ import '../viewmodels/server_work_report_viewmodel.dart';
 import '../providers/app_providers.dart';
 import '../models/work_report.dart';
 import '../models/work_report_api_models.dart';
+import 'server_work_report_detail_page.dart';
 
 /// Page that displays a list of work reports with local/server tabs
 /// Single Responsibility: Display work reports from both sources and handle navigation
@@ -525,10 +526,12 @@ class _WorkReportListPageState extends ConsumerState<WorkReportListPage>
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
         onTap: () {
-          ref
-              .read(serverWorkReportViewModelProvider.notifier)
-              .selectReport(report);
-          _showServerReportDetails(report);
+          // Navigate to full details page
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ServerWorkReportDetailPage(report: report),
+            ),
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -689,69 +692,6 @@ class _WorkReportListPageState extends ConsumerState<WorkReportListPage>
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showServerReportDetails(WorkReportData report) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(report.name),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow('Fecha:', report.reportDate),
-              _buildDetailRow('Horario:', '${report.startTime} - ${report.endTime}'),
-              _buildDetailRow('Proyecto:', report.project.name),
-              _buildDetailRow('Empleado:', report.employee.fullName),
-              _buildDetailRow('Posición:', report.employee.position.name),
-              const SizedBox(height: 8),
-              const Text(
-                'Descripción:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(report.description),
-              if (report.suggestions.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Sugerencias:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(report.suggestions),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Text(value),
-          ),
-        ],
       ),
     );
   }

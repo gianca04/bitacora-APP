@@ -66,9 +66,6 @@ class WorkReportData {
   final String reportDate;
   final String startTime;
   final String endTime;
-  final WorkReportResources resources;
-  final String suggestions;
-  final WorkReportSignatures signatures;
   final WorkReportTimestamps timestamps;
   final WorkReportEmployee employee;
   final WorkReportProject project;
@@ -82,9 +79,6 @@ class WorkReportData {
     required this.reportDate,
     required this.startTime,
     required this.endTime,
-    required this.resources,
-    required this.suggestions,
-    required this.signatures,
     required this.timestamps,
     required this.employee,
     required this.project,
@@ -93,63 +87,70 @@ class WorkReportData {
   });
 
   factory WorkReportData.fromJson(Map<String, dynamic> json) {
-    return WorkReportData(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      reportDate: json['reportDate'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      resources: WorkReportResources.fromJson(json['resources'] ?? {}),
-      suggestions: json['suggestions'] ?? '',
-      signatures: WorkReportSignatures.fromJson(json['signatures'] ?? {}),
-      timestamps: WorkReportTimestamps.fromJson(json['timestamps'] ?? {}),
-      employee: WorkReportEmployee.fromJson(json['employee'] ?? {}),
-      project: WorkReportProject.fromJson(json['project'] ?? {}),
-      photos: (json['photos'] as List<dynamic>? ?? [])
-          .map((photo) => WorkReportPhoto.fromJson(photo))
-          .toList(),
-      summary: WorkReportSummary.fromJson(json['summary'] ?? {}),
-    );
+    try {
+      return WorkReportData(
+        id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        name: json['name']?.toString() ?? '',
+        description: json['description']?.toString() ?? '',
+        reportDate: json['reportDate']?.toString() ?? '',
+        startTime: json['startTime']?.toString() ?? '',
+        endTime: json['endTime']?.toString() ?? '',
+        timestamps: json['timestamps'] != null 
+            ? WorkReportTimestamps.fromJson(json['timestamps'] as Map<String, dynamic>)
+            : WorkReportTimestamps(createdAt: '', updatedAt: ''),
+        employee: json['employee'] != null
+            ? WorkReportEmployee.fromJson(json['employee'] as Map<String, dynamic>)
+            : WorkReportEmployee(id: 0, documentNumber: '', fullName: '', position: WorkReportPosition(id: 0, name: '')),
+        project: json['project'] != null
+            ? WorkReportProject.fromJson(json['project'] as Map<String, dynamic>)
+            : WorkReportProject(id: 0, name: '', status: '', subClient: WorkReportSubClient(id: 0, name: ''), client: null),
+        photos: _parsePhotos(json['photos']),
+        summary: json['summary'] != null
+            ? WorkReportSummary.fromJson(json['summary'] as Map<String, dynamic>)
+            : WorkReportSummary(hasPhotos: false, photosCount: 0, hasSignatures: false),
+      );
+    } catch (e) {
+      // En caso de error, retornar un objeto con valores por defecto
+      return WorkReportData(
+        id: 0,
+        name: 'Error al cargar',
+        description: 'Error al parsear los datos del reporte',
+        reportDate: '',
+        startTime: '',
+        endTime: '',
+        timestamps: WorkReportTimestamps(createdAt: '', updatedAt: ''),
+        employee: WorkReportEmployee(id: 0, documentNumber: '', fullName: '', position: WorkReportPosition(id: 0, name: '')),
+        project: WorkReportProject(id: 0, name: '', status: '', subClient: WorkReportSubClient(id: 0, name: ''), client: null),
+        photos: [],
+        summary: WorkReportSummary(hasPhotos: false, photosCount: 0, hasSignatures: false),
+      );
+    }
+  }
+
+  static List<WorkReportPhoto> _parsePhotos(dynamic photosJson) {
+    try {
+      if (photosJson == null) return [];
+      if (photosJson is! List) return [];
+      
+      return photosJson
+          .where((photo) => photo != null)
+          .map((photo) {
+            try {
+              return WorkReportPhoto.fromJson(photo as Map<String, dynamic>);
+            } catch (e) {
+              return null;
+            }
+          })
+          .where((photo) => photo != null)
+          .cast<WorkReportPhoto>()
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 }
 
-class WorkReportResources {
-  final String tools;
-  final String personnel;
-  final String materials;
 
-  WorkReportResources({
-    required this.tools,
-    required this.personnel,
-    required this.materials,
-  });
-
-  factory WorkReportResources.fromJson(Map<String, dynamic> json) {
-    return WorkReportResources(
-      tools: json['tools'] ?? '',
-      personnel: json['personnel'] ?? '',
-      materials: json['materials'] ?? '',
-    );
-  }
-}
-
-class WorkReportSignatures {
-  final String? supervisor;
-  final String? manager;
-
-  WorkReportSignatures({
-    this.supervisor,
-    this.manager,
-  });
-
-  factory WorkReportSignatures.fromJson(Map<String, dynamic> json) {
-    return WorkReportSignatures(
-      supervisor: json['supervisor'],
-      manager: json['manager'],
-    );
-  }
-}
 
 class WorkReportTimestamps {
   final String createdAt;
@@ -161,42 +162,59 @@ class WorkReportTimestamps {
   });
 
   factory WorkReportTimestamps.fromJson(Map<String, dynamic> json) {
-    return WorkReportTimestamps(
-      createdAt: json['createdAt'] ?? '',
-      updatedAt: json['updatedAt'] ?? '',
-    );
+    try {
+      return WorkReportTimestamps(
+        createdAt: json['createdAt']?.toString() ?? '',
+        updatedAt: json['updatedAt']?.toString() ?? '',
+      );
+    } catch (e) {
+      return WorkReportTimestamps(createdAt: '', updatedAt: '');
+    }
   }
 }
 
 class WorkReportEmployee {
   final int id;
-  final String documentType;
   final String documentNumber;
-  final String firstName;
-  final String lastName;
   final String fullName;
   final WorkReportPosition position;
 
   WorkReportEmployee({
     required this.id,
-    required this.documentType,
     required this.documentNumber,
-    required this.firstName,
-    required this.lastName,
     required this.fullName,
     required this.position,
   });
 
   factory WorkReportEmployee.fromJson(Map<String, dynamic> json) {
-    return WorkReportEmployee(
-      id: json['id'] ?? 0,
-      documentType: json['documentType'] ?? '',
-      documentNumber: json['documentNumber'] ?? '',
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      fullName: json['fullName'] ?? '',
-      position: WorkReportPosition.fromJson(json['position'] ?? {}),
-    );
+    try {
+      final id = json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0;
+      final documentNumber = json['documentNumber']?.toString() ?? '';
+      final fullName = json['fullName']?.toString() ?? 'Sin nombre';
+      
+      WorkReportPosition position;
+      try {
+        position = json['position'] != null
+            ? WorkReportPosition.fromJson(json['position'] as Map<String, dynamic>)
+            : WorkReportPosition(id: 0, name: '');
+      } catch (e) {
+        position = WorkReportPosition(id: 0, name: '');
+      }
+      
+      return WorkReportEmployee(
+        id: id,
+        documentNumber: documentNumber,
+        fullName: fullName,
+        position: position,
+      );
+    } catch (e) {
+      return WorkReportEmployee(
+        id: 0,
+        documentNumber: '',
+        fullName: 'Sin nombre',
+        position: WorkReportPosition(id: 0, name: ''),
+      );
+    }
   }
 }
 
@@ -210,84 +228,76 @@ class WorkReportPosition {
   });
 
   factory WorkReportPosition.fromJson(Map<String, dynamic> json) {
-    return WorkReportPosition(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-    );
+    try {
+      return WorkReportPosition(
+        id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        name: json['name']?.toString() ?? '',
+      );
+    } catch (e) {
+      return WorkReportPosition(id: 0, name: '');
+    }
   }
 }
 
 class WorkReportProject {
   final int id;
   final String name;
-  final WorkReportLocation location;
-  final WorkReportDates dates;
   final String status;
   final WorkReportSubClient subClient;
-  final WorkReportClient client;
+  final WorkReportClient? client;
 
   WorkReportProject({
     required this.id,
     required this.name,
-    required this.location,
-    required this.dates,
     required this.status,
     required this.subClient,
-    required this.client,
+    this.client,
   });
 
   factory WorkReportProject.fromJson(Map<String, dynamic> json) {
-    return WorkReportProject(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      location: WorkReportLocation.fromJson(json['location'] ?? {}),
-      dates: WorkReportDates.fromJson(json['dates'] ?? {}),
-      status: json['status'] ?? '',
-      subClient: WorkReportSubClient.fromJson(json['subClient'] ?? {}),
-      client: WorkReportClient.fromJson(json['client'] ?? {}),
-    );
+    try {
+      final id = json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0;
+      final name = json['name']?.toString() ?? '';
+      final status = json['status']?.toString() ?? '';
+      
+      WorkReportSubClient subClient;
+      try {
+        subClient = json['subClient'] != null
+            ? WorkReportSubClient.fromJson(json['subClient'] as Map<String, dynamic>)
+            : WorkReportSubClient(id: 0, name: '');
+      } catch (e) {
+        subClient = WorkReportSubClient(id: 0, name: '');
+      }
+      
+      WorkReportClient? client;
+      try {
+        client = json['client'] != null
+            ? WorkReportClient.fromJson(json['client'] as Map<String, dynamic>)
+            : null;
+      } catch (e) {
+        client = null;
+      }
+      
+      return WorkReportProject(
+        id: id,
+        name: name,
+        status: status,
+        subClient: subClient,
+        client: client,
+      );
+    } catch (e) {
+      return WorkReportProject(
+        id: 0,
+        name: '',
+        status: '',
+        subClient: WorkReportSubClient(id: 0, name: ''),
+        client: null,
+      );
+    }
   }
 }
 
-class WorkReportLocation {
-  final String address;
-  final double latitude;
-  final double longitude;
-  final String coordinates;
 
-  WorkReportLocation({
-    required this.address,
-    required this.latitude,
-    required this.longitude,
-    required this.coordinates,
-  });
-
-  factory WorkReportLocation.fromJson(Map<String, dynamic> json) {
-    return WorkReportLocation(
-      address: json['address'] ?? '',
-      latitude: (json['latitude'] ?? 0.0).toDouble(),
-      longitude: (json['longitude'] ?? 0.0).toDouble(),
-      coordinates: json['coordinates'] ?? '',
-    );
-  }
-}
-
-class WorkReportDates {
-  final String startDate;
-  final String endDate;
-
-  WorkReportDates({
-    required this.startDate,
-    required this.endDate,
-  });
-
-  factory WorkReportDates.fromJson(Map<String, dynamic> json) {
-    return WorkReportDates(
-      startDate: json['startDate'] ?? '',
-      endDate: json['endDate'] ?? '',
-    );
-  }
-}
 
 class WorkReportSubClient {
   final int id;
@@ -299,10 +309,14 @@ class WorkReportSubClient {
   });
 
   factory WorkReportSubClient.fromJson(Map<String, dynamic> json) {
-    return WorkReportSubClient(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-    );
+    try {
+      return WorkReportSubClient(
+        id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        name: json['name']?.toString() ?? '',
+      );
+    } catch (e) {
+      return WorkReportSubClient(id: 0, name: '');
+    }
   }
 }
 
@@ -316,10 +330,14 @@ class WorkReportClient {
   });
 
   factory WorkReportClient.fromJson(Map<String, dynamic> json) {
-    return WorkReportClient(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-    );
+    try {
+      return WorkReportClient(
+        id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        name: json['name']?.toString() ?? '',
+      );
+    } catch (e) {
+      return WorkReportClient(id: 0, name: '');
+    }
   }
 }
 
@@ -327,40 +345,56 @@ class WorkReportPhoto {
   final int id;
   final WorkReportPhotoData afterWork;
   final WorkReportPhotoData beforeWork;
-  final String createdAt;
+  final String? createdAt;
 
   WorkReportPhoto({
     required this.id,
     required this.afterWork,
     required this.beforeWork,
-    required this.createdAt,
+    this.createdAt,
   });
 
   factory WorkReportPhoto.fromJson(Map<String, dynamic> json) {
-    return WorkReportPhoto(
-      id: json['id'] ?? 0,
-      afterWork: WorkReportPhotoData.fromJson(json['afterWork'] ?? {}),
-      beforeWork: WorkReportPhotoData.fromJson(json['beforeWork'] ?? {}),
-      createdAt: json['createdAt'] ?? '',
-    );
+    try {
+      return WorkReportPhoto(
+        id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        afterWork: json['afterWork'] != null
+            ? WorkReportPhotoData.fromJson(json['afterWork'] as Map<String, dynamic>)
+            : WorkReportPhotoData(photoUrl: null),
+        beforeWork: json['beforeWork'] != null
+            ? WorkReportPhotoData.fromJson(json['beforeWork'] as Map<String, dynamic>)
+            : WorkReportPhotoData(photoUrl: null),
+        createdAt: json['createdAt']?.toString(),
+      );
+    } catch (e) {
+      return WorkReportPhoto(
+        id: 0,
+        afterWork: WorkReportPhotoData(photoUrl: null),
+        beforeWork: WorkReportPhotoData(photoUrl: null),
+        createdAt: null,
+      );
+    }
   }
 }
 
 class WorkReportPhotoData {
   final String? photoUrl;
-  final String description;
 
   WorkReportPhotoData({
     this.photoUrl,
-    required this.description,
   });
 
   factory WorkReportPhotoData.fromJson(Map<String, dynamic> json) {
-    return WorkReportPhotoData(
-      photoUrl: json['photoUrl'],
-      description: json['description'] ?? '',
-    );
+    try {
+      return WorkReportPhotoData(
+        photoUrl: json['photoUrl']?.toString(),
+      );
+    } catch (e) {
+      return WorkReportPhotoData(photoUrl: null);
+    }
   }
+  
+  bool get hasPhoto => photoUrl != null && photoUrl!.isNotEmpty;
 }
 
 class WorkReportSummary {
@@ -375,11 +409,21 @@ class WorkReportSummary {
   });
 
   factory WorkReportSummary.fromJson(Map<String, dynamic> json) {
-    return WorkReportSummary(
-      hasPhotos: json['hasPhotos'] ?? false,
-      photosCount: json['photosCount'] ?? 0,
-      hasSignatures: json['hasSignatures'] ?? false,
-    );
+    try {
+      return WorkReportSummary(
+        hasPhotos: json['hasPhotos'] == true || json['hasPhotos'] == 1,
+        photosCount: json['photosCount'] is int 
+            ? json['photosCount'] 
+            : int.tryParse(json['photosCount']?.toString() ?? '0') ?? 0,
+        hasSignatures: json['hasSignatures'] == true || json['hasSignatures'] == 1,
+      );
+    } catch (e) {
+      return WorkReportSummary(
+        hasPhotos: false,
+        photosCount: 0,
+        hasSignatures: false,
+      );
+    }
   }
 }
 
