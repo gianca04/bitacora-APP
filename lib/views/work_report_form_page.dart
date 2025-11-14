@@ -6,6 +6,7 @@ import '../models/photo.dart';
 import '../viewmodels/work_report_viewmodel.dart';
 import '../providers/app_providers.dart';
 import '../widgets/work_report_form.dart';
+import '../widgets/tab_item.dart';
 
 /// Page for creating or editing a work report
 class WorkReportFormPage extends ConsumerStatefulWidget {
@@ -158,41 +159,102 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
       }
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          isEditing ? 'Editar Reporte' : 'Crear nuevo Reporte',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold, // Negrita
-            fontSize: 18, // Tamaño mediano
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            isEditing ? 'Editar Reporte' : 'Crear nuevo Reporte',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold, // Negrita
+              fontSize: 18, // Tamaño mediano
+            ),
+          ),
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(40),
+            child: ClipRRect(
+              clipBehavior: Clip.antiAlias,
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              child: Container
+              (
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  color: const Color(0xFF18181B),
+                ),
+                child: const TabBar(
+                  isScrollable: true,
+                  padding: EdgeInsets.zero,
+                  labelPadding: EdgeInsets.symmetric(horizontal: 12),
+                  indicatorPadding: EdgeInsets.symmetric(horizontal: 2),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  overlayColor: MaterialStatePropertyAll(Colors.transparent),
+                  indicator: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.black54,
+                  tabs: [
+                    TabItem(title: 'Información general', count: 0),
+                    TabItem(title: 'Descripción', count: 0),
+                    TabItem(title: 'Herramientas y materiales', count: 0),
+                    TabItem(title: 'Personal', count: 0),
+                    TabItem(title: 'Firmas', count: 0),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
-      ),
-      body: Container(
-        color: Colors.black, // Fondo negro para el formulario
-        child: Stack(
-          children: [
-            _isLoadingPhotos
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Cargando fotos...'),
-                      ],
-                    ),
-                  )
-                : state.status == WorkReportStatus.loading
-                ? const Center(child: CircularProgressIndicator())
-                : WorkReportForm(
-                    workReport: widget.workReport,
-                    existingPhotos: _existingPhotos,
-                    onSubmit: (report, photos, photosChanged) =>
-                        _handleSubmit(report, photos, photosChanged, context),
-                  ),
-          ],
+        body: Container(
+          color: Colors.black, // Fondo negro para el formulario
+          child: TabBarView(
+            children: [
+              // Información general: contenido existente del formulario
+              Stack(
+                children: [
+                  _isLoadingPhotos
+                      ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text('Cargando fotos...', style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
+                        )
+                      : state.status == WorkReportStatus.loading
+                          ? const Center(child: CircularProgressIndicator())
+                          : WorkReportForm(
+                              workReport: widget.workReport,
+                              existingPhotos: _existingPhotos,
+                              onSubmit: (report, photos, photosChanged) =>
+                                  _handleSubmit(report, photos, photosChanged, context),
+                            ),
+                ],
+              ),
+              // Descripción
+              const Center(
+                child: Text('Descripción', style: TextStyle(color: Colors.white)),
+              ),
+              // Herramientas y materiales
+              const Center(
+                child: Text('Herramientas y materiales', style: TextStyle(color: Colors.white)),
+              ),
+              // Personal
+              const Center(
+                child: Text('Personal', style: TextStyle(color: Colors.white)),
+              ),
+              // Firmas
+              const Center(
+                child: Text('Firmas', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
         ),
       ),
     );
