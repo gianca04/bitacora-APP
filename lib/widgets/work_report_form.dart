@@ -33,6 +33,8 @@ class _WorkReportFormState extends State<WorkReportForm> {
   final _descriptionController = TextEditingController();
   final _employeeIdController = TextEditingController();
   final _projectIdController = TextEditingController();
+  String? _reportDateError;
+  String? _timeError;
   
   // Rich text editors using QuillController
   late quill.QuillController _suggestionsController;
@@ -67,16 +69,23 @@ class _WorkReportFormState extends State<WorkReportForm> {
     _materialsController = quill.QuillController.basic();
     
     _initializeForm();
+    // Rebuild when key text fields change to update submit button state
+    _nameController.addListener(_onFormChanged);
+    _descriptionController.addListener(_onFormChanged);
+    _employeeIdController.addListener(_onFormChanged);
+    _projectIdController.addListener(_onFormChanged);
     _loadExistingPhotos();
   }
+
+  void _onFormChanged() => setState(() {});
 
   void _initializeForm() {
     if (widget.workReport != null) {
       final report = widget.workReport!;
       _nameController.text = report.name;
       _descriptionController.text = report.description;
-      _employeeIdController.text = report.employeeId.toString();
-      _projectIdController.text = report.projectId.toString();
+      _employeeIdController.text = report.employeeId?.toString() ?? '';
+      _projectIdController.text = report.projectId?.toString() ?? '';
       
       // Load rich text fields from Delta JSON (if stored) or plain text fallback
       _loadQuillField(_suggestionsController, report.suggestions);
@@ -216,8 +225,8 @@ class _WorkReportFormState extends State<WorkReportForm> {
                   label: 'ID del empleado',
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Obligatorio';
-                    if (int.tryParse(value!) == null) return 'Número inválido';
+                    if (value == null || value.isEmpty) return null;
+                    if (int.tryParse(value) == null) return 'Número inválido';
                     return null;
                   },
                 ),
@@ -229,8 +238,8 @@ class _WorkReportFormState extends State<WorkReportForm> {
                   label: 'ID del proyecto',
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Obligatorio';
-                    if (int.tryParse(value!) == null) return 'Número inválido';
+                    if (value == null || value.isEmpty) return null;
+                    if (int.tryParse(value) == null) return 'Número inválido';
                     return null;
                   },
                 ),
@@ -242,26 +251,35 @@ class _WorkReportFormState extends State<WorkReportForm> {
           // Sección: Fecha y hora
           _buildSectionTitle('Fecha y hora'),
           _buildDateTimePicker(
-            label: 'Fecha del reporte',
+            label: 'Fecha del reporte *',
             value: _reportDate,
-            onChanged: (date) => setState(() => _reportDate = date),
+            onChanged: (date) => setState(() {
+              _reportDate = date;
+              _reportDateError = null;
+            }),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: _buildTimePicker(
-                  label: 'Hora inicio',
+                  label: 'Hora inicio *',
                   value: _startTime,
-                  onChanged: (time) => setState(() => _startTime = time),
+                  onChanged: (time) => setState(() {
+                    _startTime = time;
+                    _timeError = null;
+                  }),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildTimePicker(
-                  label: 'Hora fin',
+                  label: 'Hora fin *',
                   value: _endTime,
-                  onChanged: (time) => setState(() => _endTime = time),
+                  onChanged: (time) => setState(() {
+                    _endTime = time;
+                    _timeError = null;
+                  }),
                 ),
               ),
             ],
@@ -420,7 +438,9 @@ class _WorkReportFormState extends State<WorkReportForm> {
 
           // Submit Button
           ElevatedButton(
-            onPressed: _handleSubmit,
+            onPressed: (_formKey.currentState?.validate() ?? false)
+              ? _handleSubmit
+              : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2A8D8D),
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -515,35 +535,63 @@ class _WorkReportFormState extends State<WorkReportForm> {
     required DateTime value,
     required Function(DateTime) onChanged,
   }) {
-    return InkWell(
-      onTap: () async {
-        final date = await showDatePicker(
-          context: context,
-          initialDate: value,
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-        );
-        if (date != null) {
-          onChanged(DateTime(
-            date.year,
-            date.month,
-            date.day,
-            value.hour,
-            value.minute,
-          ));
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: value,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (date != null) {
+              onChanged(DateTime(
+                date.year,
+                date.month,
+                date.day,
+                value.hour,
+                value.minute,
+              ));
+            }
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              label: (label.contains('*'))
+                  ? RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: label.replaceAll('*', '').trim(),
+                            style: TextStyle(color: Colors.grey[700]),
+                          ),
+                          const TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(label),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
+            ),
           ),
         ),
-        child: Text(
-          '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
+        const SizedBox(height: 6),
+        Text(
+          _reportDateError ?? 'Obligatorio',
+          style: TextStyle(
+            fontSize: 12,
+            color: _reportDateError != null ? Colors.red : Colors.grey[600],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -552,38 +600,79 @@ class _WorkReportFormState extends State<WorkReportForm> {
     required DateTime value,
     required Function(DateTime) onChanged,
   }) {
-    return InkWell(
-      onTap: () async {
-        final time = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.fromDateTime(value),
-        );
-        if (time != null) {
-          onChanged(DateTime(
-            value.year,
-            value.month,
-            value.day,
-            time.hour,
-            time.minute,
-          ));
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () async {
+            final time = await showTimePicker(
+              context: context,
+              initialTime: TimeOfDay.fromDateTime(value),
+            );
+            if (time != null) {
+              onChanged(DateTime(
+                value.year,
+                value.month,
+                value.day,
+                time.hour,
+                time.minute,
+              ));
+            }
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              label: (label.contains('*'))
+                  ? RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: label.replaceAll('*', '').trim(),
+                            style: TextStyle(color: Colors.grey[700]),
+                          ),
+                          const TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(label),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}',
+            ),
           ),
         ),
-        child: Text(
-          '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}',
+        const SizedBox(height: 6),
+        Text(
+          _timeError ?? 'Obligatorio',
+          style: TextStyle(
+            fontSize: 12,
+            color: _timeError != null ? Colors.red : Colors.grey[600],
+          ),
         ),
-      ),
+      ],
     );
   }
 
   void _handleSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
+      // Clear previous picker errors
+      setState(() {
+        _reportDateError = null;
+        _timeError = null;
+      });
+
+      // Business validation: ensure endTime is after startTime
+      if (!_endTime.isAfter(_startTime)) {
+        setState(() {
+          _timeError = 'La hora de fin debe ser posterior a la hora de inicio';
+        });
+        return;
+      }
       // Convertir firmas a base64 si existen
       final supervisorSig = _supervisorSignature != null 
           ? base64Encode(_supervisorSignature!) 
@@ -594,10 +683,14 @@ class _WorkReportFormState extends State<WorkReportForm> {
 
       final report = WorkReport(
         id: widget.workReport?.id ?? Isar.autoIncrement,
-        name: _nameController.text,
-        description: _descriptionController.text,
-        employeeId: int.parse(_employeeIdController.text),
-        projectId: int.parse(_projectIdController.text),
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        employeeId: _employeeIdController.text.trim().isNotEmpty
+            ? int.tryParse(_employeeIdController.text.trim())
+            : null,
+        projectId: _projectIdController.text.trim().isNotEmpty
+            ? int.tryParse(_projectIdController.text.trim())
+            : null,
         startTime: _startTime,
         endTime: _endTime,
         reportDate: _reportDate,

@@ -200,14 +200,14 @@ WorkReport _workReportDeserialize(
   final object = WorkReport(
     createdAt: reader.readDateTimeOrNull(offsets[0]),
     description: reader.readString(offsets[1]),
-    employeeId: reader.readLong(offsets[2]),
+    employeeId: reader.readLongOrNull(offsets[2]),
     endTime: reader.readDateTime(offsets[3]),
     id: id,
     managerSignature: reader.readStringOrNull(offsets[4]),
     materials: reader.readStringOrNull(offsets[5]),
     name: reader.readString(offsets[6]),
     personnel: reader.readStringOrNull(offsets[7]),
-    projectId: reader.readLong(offsets[8]),
+    projectId: reader.readLongOrNull(offsets[8]),
     reportDate: reader.readDateTime(offsets[9]),
     startTime: reader.readDateTime(offsets[10]),
     suggestions: reader.readStringOrNull(offsets[11]),
@@ -230,7 +230,7 @@ P _workReportDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 3:
       return (reader.readDateTime(offset)) as P;
     case 4:
@@ -242,7 +242,7 @@ P _workReportDeserializeProp<P>(
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 9:
       return (reader.readDateTime(offset)) as P;
     case 10:
@@ -677,8 +677,26 @@ extension WorkReportQueryFilter
     });
   }
 
+  QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition>
+      employeeIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'employeeId',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition>
+      employeeIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'employeeId',
+      ));
+    });
+  }
+
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition> employeeIdEqualTo(
-      int value) {
+      int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'employeeId',
@@ -689,7 +707,7 @@ extension WorkReportQueryFilter
 
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition>
       employeeIdGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -703,7 +721,7 @@ extension WorkReportQueryFilter
 
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition>
       employeeIdLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -716,8 +734,8 @@ extension WorkReportQueryFilter
   }
 
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition> employeeIdBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1427,8 +1445,26 @@ extension WorkReportQueryFilter
     });
   }
 
+  QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition>
+      projectIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'projectId',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition>
+      projectIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'projectId',
+      ));
+    });
+  }
+
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition> projectIdEqualTo(
-      int value) {
+      int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'projectId',
@@ -1439,7 +1475,7 @@ extension WorkReportQueryFilter
 
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition>
       projectIdGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1452,7 +1488,7 @@ extension WorkReportQueryFilter
   }
 
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition> projectIdLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1465,8 +1501,8 @@ extension WorkReportQueryFilter
   }
 
   QueryBuilder<WorkReport, WorkReport, QAfterFilterCondition> projectIdBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2631,7 +2667,7 @@ extension WorkReportQueryProperty
     });
   }
 
-  QueryBuilder<WorkReport, int, QQueryOperations> employeeIdProperty() {
+  QueryBuilder<WorkReport, int?, QQueryOperations> employeeIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'employeeId');
     });
@@ -2668,7 +2704,7 @@ extension WorkReportQueryProperty
     });
   }
 
-  QueryBuilder<WorkReport, int, QQueryOperations> projectIdProperty() {
+  QueryBuilder<WorkReport, int?, QQueryOperations> projectIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'projectId');
     });

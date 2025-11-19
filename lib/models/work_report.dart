@@ -7,8 +7,9 @@ class WorkReport {
   Id id = Isar.autoIncrement;
 
   // Employee and project references
-  late int employeeId;
-  late int projectId;
+  // Employee and project references (nullable to allow server-only records)
+  int? employeeId;
+  int? projectId;
 
   // Basic information
   late String name;
@@ -36,8 +37,8 @@ class WorkReport {
 
   WorkReport({
     this.id = Isar.autoIncrement,
-    required this.employeeId,
-    required this.projectId,
+    this.employeeId,
+    this.projectId,
     required this.name,
     required this.description,
     this.supervisorSignature,

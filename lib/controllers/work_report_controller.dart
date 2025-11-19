@@ -50,8 +50,11 @@ class WorkReportController {
   /// Create a new work report and return the resulting state
   Future<Id?> createReport(WorkReport report) async {
     final id = await ref
-        .read(workReportViewModelProvider.notifier)
-        .createReport(report);
+      .read(workReportViewModelProvider.notifier)
+      .createReport(report);
+    if (id != null) {
+      report.id = id;
+    }
     return id;
   }
 
