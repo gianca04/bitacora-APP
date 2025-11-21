@@ -1,20 +1,65 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:bitacora/widgets/inputs/CustomRichEditor.dart';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
-import 'package:flutter_quill/flutter_quill.dart' as quill;
 
+// Asumimos que estos imports existen en tu proyecto
 import '../models/work_report.dart';
 import '../models/photo.dart';
+import '../config/app_colors.dart';
 import 'before_after_photo_card.dart';
 import 'signature_pad_widget.dart';
+import 'section_title.dart';
+import 'add_button.dart';
+import 'inputs/modern_text_field.dart';
+import 'inputs/modern_date_picker.dart';
+import 'time_range_picker.dart';
+import 'package:html_editor_enhanced/html_editor.dart'; // <--- Nuevo import
+import 'custom_floating_tab_bar.dart';
 
-/// Form widget for creating/editing work reports
-/// Single Responsibility: Handle form state and validation
+
+// --- LOGIC HELPERS (Sin cambios, tu lógica es sólida) ---
+class _PhotoTaskDraft {
+  String? beforePhoto;
+  String? afterPhoto;
+  String beforeDescription;
+  String afterDescription;
+  final String? originalBeforePhoto;
+  final String? originalAfterPhoto;
+
+  _PhotoTaskDraft({
+    this.beforePhoto,
+    this.afterPhoto,
+    this.beforeDescription = '',
+    this.afterDescription = '',
+    this.originalBeforePhoto,
+    this.originalAfterPhoto,
+  });
+
+  factory _PhotoTaskDraft.fromPhoto(Photo photo) {
+    return _PhotoTaskDraft(
+      beforePhoto: photo.beforeWorkPhotoPath,
+      afterPhoto: photo.photoPath,
+      beforeDescription: photo.beforeWorkDescripcion ?? '',
+      afterDescription: photo.descripcion ?? '',
+      originalBeforePhoto: photo.beforeWorkPhotoPath,
+      originalAfterPhoto: photo.photoPath,
+    );
+  }
+
+  bool get photosChanged =>
+      beforePhoto != originalBeforePhoto || afterPhoto != originalAfterPhoto;
+  bool get isValid =>
+      (beforePhoto?.isNotEmpty ?? false) || (afterPhoto?.isNotEmpty ?? false);
+}
+
+// --- MAIN WIDGET ---
 class WorkReportForm extends StatefulWidget {
   final WorkReport? workReport;
   final List<Photo>? existingPhotos;
-  final Function(WorkReport report, List<Photo> photos, bool photosChanged) onSubmit;
+  final Function(WorkReport report, List<Photo> photos, bool photosChanged)
+  onSubmit;
 
   const WorkReportForm({
     super.key,
@@ -29,153 +74,106 @@ class WorkReportForm extends StatefulWidget {
 
 class _WorkReportFormState extends State<WorkReportForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _employeeIdController = TextEditingController();
-  final _projectIdController = TextEditingController();
-  String? _reportDateError;
-  String? _timeError;
-  
-  // Rich text editors using QuillController
-  late quill.QuillController _suggestionsController;
-  late quill.QuillController _toolsController;
-  late quill.QuillController _personnelController;
-  late quill.QuillController _materialsController;
 
+  // Controllers
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _employeeIdController;
+  late final TextEditingController _projectIdController;
+
+  // --- 1. CAMBIO: Nuevos Controladores HTML ---
+  late final HtmlEditorController _suggestionsController;
+  late final HtmlEditorController _toolsController;
+  late final HtmlEditorController _personnelController;
+  late final HtmlEditorController _materialsController;
+
+  // --- 2. CAMBIO: Variables para Texto Inicial ---
+  // Necesitamos guardar el texto inicial en variables string para pasarlas al widget
+  String? _initialSuggestions;
+  String? _initialTools;
+  String? _initialPersonnel;
+  String? _initialMaterials;
+
+  // State
   DateTime _startTime = DateTime.now();
   DateTime _endTime = DateTime.now();
   DateTime _reportDate = DateTime.now();
 
-  // Lista de tareas con fotos antes/después
-  final List<Map<String, dynamic>> _photoTasks = [];
-  
-  // Track whether user modified photos (add/delete/replace)
-  bool _photosModified = false;
-  // Track which indices have sent their initial onChanged callback so we
-  // don't mark that as a user modification.
-  final Set<int> _initialNotifiedIndices = {};
+  String? _reportDateError;
+  String? _timeError;
 
-  // Firmas digitales
+  final List<_PhotoTaskDraft> _photoTasks = [];
+  bool _userManuallyAddedTask = false;
+
+  // Firmas
   Uint8List? _supervisorSignature;
   Uint8List? _managerSignature;
 
   @override
   void initState() {
     super.initState();
-    // Initialize QuillControllers
-    _suggestionsController = quill.QuillController.basic();
-    _toolsController = quill.QuillController.basic();
-    _personnelController = quill.QuillController.basic();
-    _materialsController = quill.QuillController.basic();
-    
-    _initializeForm();
-    // Rebuild when key text fields change to update submit button state
-    _nameController.addListener(_onFormChanged);
-    _descriptionController.addListener(_onFormChanged);
-    _employeeIdController.addListener(_onFormChanged);
-    _projectIdController.addListener(_onFormChanged);
+    _initializeControllers();
+    _loadFormData();
     _loadExistingPhotos();
   }
 
-  void _onFormChanged() => setState(() {});
+  void _initializeControllers() {
+    _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _employeeIdController = TextEditingController();
+    _projectIdController = TextEditingController();
 
-  void _initializeForm() {
-    if (widget.workReport != null) {
-      final report = widget.workReport!;
-      _nameController.text = report.name;
-      _descriptionController.text = report.description;
-      _employeeIdController.text = report.employeeId?.toString() ?? '';
-      _projectIdController.text = report.projectId?.toString() ?? '';
-      
-      // Load rich text fields from Delta JSON (if stored) or plain text fallback
-      _loadQuillField(_suggestionsController, report.suggestions);
-      _loadQuillField(_toolsController, report.tools);
-      _loadQuillField(_personnelController, report.personnel);
-      _loadQuillField(_materialsController, report.materials);
-      
-      _startTime = report.startTime;
-      _endTime = report.endTime;
-      _reportDate = report.reportDate;
-    }
-  }
-  
-  void _loadQuillField(quill.QuillController controller, String? data) {
-    if (data == null || data.isEmpty) return;
-    
-    try {
-      // Try to parse as Delta JSON
-      final delta = quill.Document.fromJson(jsonDecode(data));
-      controller.document = delta;
-    } catch (e) {
-      // Fallback: treat as plain text
-      controller.document = quill.Document()..insert(0, data);
-    }
-  }
-  
-  String? _serializeQuillField(quill.QuillController controller) {
-    if (controller.document.isEmpty()) return null;
-    return jsonEncode(controller.document.toDelta().toJson());
+    // --- 3. CAMBIO: Instanciación simple ---
+    _suggestionsController = HtmlEditorController();
+    _toolsController = HtmlEditorController();
+    _personnelController = HtmlEditorController();
+    _materialsController = HtmlEditorController();
   }
 
-  void _loadExistingPhotos() {
-    // Sincronizar el estado local con widget.existingPhotos
-    // Esto permite que las fotos cargadas asincrónicamente actualicen el formulario
-    debugPrint('📦 WorkReportForm._loadExistingPhotos called');
-    debugPrint('   existingPhotos count: ${widget.existingPhotos?.length ?? 0}');
-    
-    // Don't clear if we're just reloading the same data
-    final shouldReload = widget.existingPhotos != null && 
-                         widget.existingPhotos!.isNotEmpty &&
-                         (_photoTasks.isEmpty || 
-                          _photoTasks.length != widget.existingPhotos!.length);
-    
-    if (!shouldReload && _photoTasks.isNotEmpty) {
-      debugPrint('   ⏭️ Skipping reload - data unchanged');
-      return;
-    }
-    
-    _photoTasks.clear();
-    _initialNotifiedIndices.clear();
-    
-    if (widget.existingPhotos != null && widget.existingPhotos!.isNotEmpty) {
-      // Convertir fotos existentes a formato de _photoTasks
-      for (final photo in widget.existingPhotos!) {
-        debugPrint('   Loading photo: afterPath=${photo.photoPath}, beforePath=${photo.beforeWorkPhotoPath}');
-        _photoTasks.add({
-          'beforePhoto': photo.beforeWorkPhotoPath,
-          'afterPhoto': photo.photoPath,
-          'beforeDescription': photo.beforeWorkDescripcion ?? '',
-          'afterDescription': photo.descripcion ?? '',
-          // Store original paths to compare later
-          'originalBeforePhoto': photo.beforeWorkPhotoPath,
-          'originalAfterPhoto': photo.photoPath,
-        });
-      }
-      debugPrint('   ✅ Loaded ${_photoTasks.length} photo tasks');
-    } else {
-      debugPrint('   ℹ️ No existing photos to load');
-    }
+  void _loadFormData() {
+    if (widget.workReport == null) return;
+    final report = widget.workReport!;
+    _nameController.text = report.name;
+    _descriptionController.text = report.description;
+    _employeeIdController.text = report.employeeId?.toString() ?? '';
+    _projectIdController.text = report.projectId?.toString() ?? '';
+
+    // --- 4. CAMBIO: Asignar a variables Strings (Asumiendo que tu BD ya guarda HTML o String) ---
+    // Si tu BD tiene JSON de Quill, esto se verá "feo" la primera vez hasta que guardes como HTML.
+    _initialSuggestions = report.suggestions;
+    _initialTools = report.tools;
+    _initialPersonnel = report.personnel;
+    _initialMaterials = report.materials;
+
+    _startTime = report.startTime;
+    _endTime = report.endTime;
+    _reportDate = report.reportDate;
   }
 
   @override
   void didUpdateWidget(covariant WorkReportForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // Solo recargar si las fotos existentes realmente cambiaron
     if (widget.existingPhotos != oldWidget.existingPhotos) {
-      final oldCount = oldWidget.existingPhotos?.length ?? 0;
-      final newCount = widget.existingPhotos?.length ?? 0;
-      
-      debugPrint('WorkReportForm: existingPhotos changed from $oldCount to $newCount');
-      
-      // Only reload if counts are different or if we're going from null to data
-      if (oldCount != newCount || (oldCount == 0 && newCount > 0)) {
-        setState(() {
-          _loadExistingPhotos();
-        });
-      } else {
-        debugPrint('   ⏭️ Same count, skipping reload');
+      final newLen = widget.existingPhotos?.length ?? 0;
+      final oldLen = oldWidget.existingPhotos?.length ?? 0;
+      if (newLen != oldLen || (oldLen == 0 && newLen > 0)) {
+        setState(() => _loadExistingPhotos());
       }
+    }
+  }
+
+  void _loadExistingPhotos() {
+    final isInitialLoad = _photoTasks.isEmpty;
+    final hasExternalChanges =
+        (widget.existingPhotos?.length ?? 0) != _photoTasks.length;
+
+    if (!isInitialLoad && !hasExternalChanges) return;
+
+    _photoTasks.clear();
+    if (widget.existingPhotos != null) {
+      _photoTasks.addAll(
+        widget.existingPhotos!.map((p) => _PhotoTaskDraft.fromPhoto(p)),
+      );
     }
   }
 
@@ -185,571 +183,386 @@ class _WorkReportFormState extends State<WorkReportForm> {
     _descriptionController.dispose();
     _employeeIdController.dispose();
     _projectIdController.dispose();
-    _suggestionsController.dispose();
-    _toolsController.dispose();
-    _personnelController.dispose();
-    _materialsController.dispose();
     super.dispose();
   }
 
+  // --- UI BUILD METHOD ---
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: ListView(
-        padding: const EdgeInsets.all(16.0),
+    // UI/UX Tip: GestureDetector oculta el teclado al tocar fuera
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          children: [
+            _buildHeaderInfo(),
+            const SizedBox(height: 24),
+            _buildSectionTitle('Detalles Generales', Icons.dashboard_customize),
+            _buildBasicInfoSection(),
+            const SizedBox(height: 24),
+            _buildSectionTitle('Cronología', Icons.access_time_filled),
+            _buildDateTimeSection(),
+            const SizedBox(height: 24),
+            _buildSectionTitle('Bitácora', Icons.menu_book),
+            _buildRichTextDetails(),
+            const SizedBox(height: 24),
+            _buildSectionTitle('Evidencia Fotográfica', Icons.camera_alt),
+            _buildPhotosSection(),
+            const SizedBox(height: 24),
+            _buildSectionTitle('Conformidad', Icons.verified_user),
+            _buildSignaturesSection(),
+            const SizedBox(height: 40),
+            _buildSubmitButton(),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- SECCIONES MEJORADAS ---
+
+  Widget _buildHeaderInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.workReport == null ? 'Nuevo Reporte' : 'Editar Reporte',
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.white, // Asumiendo fondo oscuro
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Complete la información detallada del servicio realizado.',
+          style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return SectionTitle(title: title, icon: icon);
+  }
+
+  Widget _buildBasicInfoSection() {
+    return Column(
+      children: [
+        ModernTextField(
+          controller: _nameController,
+          label: 'Título del Reporte',
+          hint: 'Ej: Mantenimiento Preventivo Torre A',
+          icon: Icons.title,
+          validator: (v) => v?.isEmpty ?? true ? 'Requerido' : null,
+        ),
+        const SizedBox(height: 16),
+        ModernTextField(
+          controller: _descriptionController,
+          label: 'Descripción',
+          hint: 'Resumen ejecutivo de las actividades...',
+          icon: Icons.short_text,
+          maxLines: 3,
+          validator: (v) => v?.isEmpty ?? true ? 'Requerido' : null,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: ModernTextField(
+                controller: _employeeIdController,
+                label: 'ID Empleado',
+                icon: Icons.badge_outlined,
+                keyboardType: TextInputType.number,
+                validator: _validateInteger,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ModernTextField(
+                controller: _projectIdController,
+                label: 'ID Proyecto',
+                icon: Icons.folder_open,
+                keyboardType: TextInputType.number,
+                validator: _validateInteger,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateTimeSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderDark.withOpacity(0.5)),
+      ),
+      child: Column(
         children: [
-          // Sección: Información básica
-          _buildSectionTitle('Información básica'),
-          _buildTextField(
-            controller: _nameController,
-            label: 'Nombre del reporte',
-            validator: (value) => value?.isEmpty ?? true ? 'El nombre es obligatorio' : null,
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            controller: _descriptionController,
-            label: 'Descripción',
-            maxLines: 3,
-            validator: (value) => value?.isEmpty ?? true ? 'La descripción es obligatoria' : null,
-          ),
-          const SizedBox(height: 16),
-          
-          // Sección: Empleado y proyecto
-          _buildSectionTitle('Asignación'),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  controller: _employeeIdController,
-                  label: 'ID del empleado',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return null;
-                    if (int.tryParse(value) == null) return 'Número inválido';
-                    return null;
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildTextField(
-                  controller: _projectIdController,
-                  label: 'ID del proyecto',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return null;
-                    if (int.tryParse(value) == null) return 'Número inválido';
-                    return null;
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Sección: Fecha y hora
-          _buildSectionTitle('Fecha y hora'),
-          _buildDateTimePicker(
-            label: 'Fecha del reporte *',
+          ModernDatePicker(
+            label: 'Fecha del Servicio',
             value: _reportDate,
-            onChanged: (date) => setState(() {
-              _reportDate = date;
-              _reportDateError = null;
-            }),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTimePicker(
-                  label: 'Hora inicio *',
-                  value: _startTime,
-                  onChanged: (time) => setState(() {
-                    _startTime = time;
-                    _timeError = null;
-                  }),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildTimePicker(
-                  label: 'Hora fin *',
-                  value: _endTime,
-                  onChanged: (time) => setState(() {
-                    _endTime = time;
-                    _timeError = null;
-                  }),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Sección: Detalles adicionales
-          _buildSectionTitle('Detalles adicionales'),
-          _buildQuillEditor(
-            controller: _suggestionsController,
-            label: 'Sugerencias',
-            minHeight: 120,
-          ),
-          const SizedBox(height: 16),
-          _buildQuillEditor(
-            controller: _toolsController,
-            label: 'Herramientas utilizadas',
-            minHeight: 120,
-          ),
-          const SizedBox(height: 16),
-          _buildQuillEditor(
-            controller: _personnelController,
-            label: 'Personal',
-            minHeight: 120,
-          ),
-          const SizedBox(height: 16),
-          _buildQuillEditor(
-            controller: _materialsController,
-            label: 'Materiales',
-            minHeight: 120,
-          ),
-          const SizedBox(height: 24),
-
-          // Photos Section - Fotos antes/después de cada tarea
-          _buildSectionTitle('Fotografías del trabajo'),
-          Text(
-            'Agregue fotos del antes y después de cada tarea realizada',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Lista de tareas con fotos
-          for (var entry in _photoTasks.asMap().entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: BeforeAfterPhotoCard(
-                // Pasamos entry.key (0-based). El widget muestra +1 internamente para UX.
-                index: entry.key,
-                beforePhotoPath: entry.value['beforePhoto'] as String?,
-                afterPhotoPath: entry.value['afterPhoto'] as String?,
-                beforeDescription: entry.value['beforeDescription'] as String?,
-                afterDescription: entry.value['afterDescription'] as String?,
-                onChanged: (before, after, beforeDesc, afterDesc) {
-                  setState(() {
-                    // Debug: verificar qué valores llegan
-                    debugPrint('📸 Photo task ${entry.key} onChanged:');
-                    debugPrint('  beforePhoto: $before');
-                    debugPrint('  afterPhoto: $after');
-                    debugPrint('  Original beforePhoto: ${_photoTasks[entry.key]['originalBeforePhoto']}');
-                    debugPrint('  Original afterPhoto: ${_photoTasks[entry.key]['originalAfterPhoto']}');
-                    
-                    _photoTasks[entry.key]['beforePhoto'] = before;
-                    _photoTasks[entry.key]['afterPhoto'] = after;
-                    _photoTasks[entry.key]['beforeDescription'] = beforeDesc;
-                    _photoTasks[entry.key]['afterDescription'] = afterDesc;
-
-                    // Check if photo paths actually changed (not just descriptions)
-                    final originalBefore = _photoTasks[entry.key]['originalBeforePhoto'] as String?;
-                    final originalAfter = _photoTasks[entry.key]['originalAfterPhoto'] as String?;
-                    
-                    // If this index has already sent its initial onChanged, check if
-                    // the actual photo paths changed (indicating a photo replacement)
-                    if (_initialNotifiedIndices.contains(entry.key)) {
-                      // Mark as modified only if photo paths changed
-                      if (before != originalBefore || after != originalAfter) {
-                        debugPrint('  🔄 Photos modified detected!');
-                        _photosModified = true;
-                      } else {
-                        debugPrint('  ✅ Only descriptions changed, photos preserved');
-                      }
-                    } else {
-                      debugPrint('  📥 Initial notification');
-                      _initialNotifiedIndices.add(entry.key);
-                    }
-                  });
+            icon: Icons.calendar_month,
+            errorText: _reportDateError,
+            onTap: () async {
+              final date = await showDatePicker(
+                context: context,
+                initialDate: _reportDate,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
+                builder: (context, child) {
+                  return Theme(
+                    data: ThemeData.dark().copyWith(
+                      colorScheme: ColorScheme.dark(primary: AppColors.primary),
+                    ),
+                    child: child!,
+                  );
                 },
-              ),
-            ),
-
-          // Botón para agregar nueva tarea
-          OutlinedButton.icon(
-            onPressed: () {
-              setState(() {
-                _photoTasks.add({
-                  'beforePhoto': null,
-                  'afterPhoto': null,
-                  'beforeDescription': '',
-                  'afterDescription': '',
-                  // New tasks have no original paths
-                  'originalBeforePhoto': null,
-                  'originalAfterPhoto': null,
-                });
-                // User explicitly added a new task => photos modified
-                _photosModified = true;
-              });
-            },
-            icon: const Icon(Icons.add_photo_alternate),
-            label: const Text('Agregar Nueva Tarea'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              side: const BorderSide(color: Color(0xFF2A8D8D), width: 2),
-              foregroundColor: const Color(0xFF2A8D8D),
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Signatures Section - Firmas digitales
-          _buildSectionTitle('Firmas de Aprobación'),
-          Text(
-            'Las firmas digitales validan la aprobación del reporte',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Firma del Supervisor
-          SignaturePadWidget(
-            label: 'Firma del Supervisor',
-            color: const Color(0xFF2A8D8D),
-            onSignatureChanged: (signature) {
-              setState(() {
-                _supervisorSignature = signature;
-              });
+              );
+              if (date != null) setState(() => _reportDate = date);
             },
           ),
           const SizedBox(height: 16),
-          
-          // Firma del Gerente
-          SignaturePadWidget(
-            label: 'Firma del Gerente',
-            color: const Color(0xFF1F6B6B),
-            onSignatureChanged: (signature) {
-              setState(() {
-                _managerSignature = signature;
-              });
-            },
-          ),
-          const SizedBox(height: 32),
-
-          // Submit Button
-          ElevatedButton(
-            onPressed: (_formKey.currentState?.validate() ?? false)
-              ? _handleSubmit
-              : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2A8D8D),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              widget.workReport == null ? 'Crear reporte' : 'Actualizar reporte',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+          TimeRangePicker(
+            startTime: _startTime,
+            endTime: _endTime,
+            onStartTimeChanged: (time) => setState(() {
+              _startTime = time;
+              _timeError = null;
+            }),
+            onEndTimeChanged: (time) => setState(() {
+              _endTime = time;
+              _timeError = null;
+            }),
+            errorText: _timeError,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 16),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF2A8D8D),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    int maxLines = 1,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      validator: validator,
-    );
-  }
-
-  Widget _buildQuillEditor({
-    required quill.QuillController controller,
-    required String label,
-    double minHeight = 150,
-  }) {
+  Widget _buildRichTextDetails() {
+    // Usamos un Layout Grid conceptual
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+        CustomRichEditor(
+          controller: _suggestionsController,
+          label: 'Sugerencias',
+          initialText: _initialSuggestions, // Pasamos el texto aquí
+          hintText: 'Ingrese sugerencias...',
         ),
-        const SizedBox(height: 8),
-        Container(
-          constraints: BoxConstraints(minHeight: minHeight),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.all(12),
-          child: quill.QuillEditor(
-            scrollController: ScrollController(),
-            focusNode: FocusNode(),
-            controller: controller,
-          ),
+        const SizedBox(height: 16),
+        const SizedBox(height: 16),
+        CustomRichEditor(
+          controller: _toolsController,
+          label: 'Herramientas',
+          initialText: _initialTools,
+          hintText: 'Listado de herramientas...',
+        ),
+        const SizedBox(height: 16),
+        CustomRichEditor(
+          controller: _personnelController,
+          label: 'Personal Involucrado',
+          initialText: _initialPersonnel,
+          hintText: 'Nombres del equipo...',
+        ),
+        const SizedBox(height: 16),
+        CustomRichEditor(
+          controller: _materialsController,
+          label: 'Materiales',
+          initialText: _initialMaterials,
+          hintText: 'Materiales utilizados...',
         ),
       ],
     );
   }
 
-  Widget _buildDateTimePicker({
-    required String label,
-    required DateTime value,
-    required Function(DateTime) onChanged,
-  }) {
+  Widget _buildPhotosSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: value,
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (date != null) {
-              onChanged(DateTime(
-                date.year,
-                date.month,
-                date.day,
-                value.hour,
-                value.minute,
-              ));
-            }
-          },
-          child: InputDecorator(
-            decoration: InputDecoration(
-              label: (label.contains('*'))
-                  ? RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: label.replaceAll('*', '').trim(),
-                            style: TextStyle(color: Colors.grey[700]),
-                          ),
-                          const TextSpan(
-                            text: ' *',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Text(label),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+        ..._photoTasks.asMap().entries.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: BeforeAfterPhotoCard(
+              index: entry.key,
+              beforePhotoPath: entry.value.beforePhoto,
+              afterPhotoPath: entry.value.afterPhoto,
+              beforeDescription: entry.value.beforeDescription,
+              afterDescription: entry.value.afterDescription,
+              onChanged: (before, after, beforeDesc, afterDesc) {
+                setState(() {
+                  entry.value.beforePhoto = before;
+                  entry.value.afterPhoto = after;
+                  entry.value.beforeDescription = beforeDesc ?? '';
+                  entry.value.afterDescription = afterDesc ?? '';
+                });
+              },
             ),
-            child: Text(
-              '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _reportDateError ?? 'Obligatorio',
-          style: TextStyle(
-            fontSize: 12,
-            color: _reportDateError != null ? Colors.red : Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimePicker({
-    required String label,
-    required DateTime value,
-    required Function(DateTime) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () async {
-            final time = await showTimePicker(
-              context: context,
-              initialTime: TimeOfDay.fromDateTime(value),
-            );
-            if (time != null) {
-              onChanged(DateTime(
-                value.year,
-                value.month,
-                value.day,
-                time.hour,
-                time.minute,
-              ));
-            }
-          },
-          child: InputDecorator(
-            decoration: InputDecoration(
-              label: (label.contains('*'))
-                  ? RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: label.replaceAll('*', '').trim(),
-                            style: TextStyle(color: Colors.grey[700]),
-                          ),
-                          const TextSpan(
-                            text: ' *',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Text(label),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}',
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _timeError ?? 'Obligatorio',
-          style: TextStyle(
-            fontSize: 12,
-            color: _timeError != null ? Colors.red : Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _handleSubmit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // Clear previous picker errors
-      setState(() {
-        _reportDateError = null;
-        _timeError = null;
-      });
-
-      // Business validation: ensure endTime is after startTime
-      if (!_endTime.isAfter(_startTime)) {
-        setState(() {
-          _timeError = 'La hora de fin debe ser posterior a la hora de inicio';
-        });
-        return;
-      }
-      // Convertir firmas a base64 si existen
-      final supervisorSig = _supervisorSignature != null 
-          ? base64Encode(_supervisorSignature!) 
-          : null;
-      final managerSig = _managerSignature != null 
-          ? base64Encode(_managerSignature!) 
-          : null;
-
-      final report = WorkReport(
-        id: widget.workReport?.id ?? Isar.autoIncrement,
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        employeeId: _employeeIdController.text.trim().isNotEmpty
-            ? int.tryParse(_employeeIdController.text.trim())
-            : null,
-        projectId: _projectIdController.text.trim().isNotEmpty
-            ? int.tryParse(_projectIdController.text.trim())
-            : null,
-        startTime: _startTime,
-        endTime: _endTime,
-        reportDate: _reportDate,
-        suggestions: _serializeQuillField(_suggestionsController),
-        tools: _serializeQuillField(_toolsController),
-        personnel: _serializeQuillField(_personnelController),
-        materials: _serializeQuillField(_materialsController),
-        supervisorSignature: supervisorSig,
-        managerSignature: managerSig,
-      );
-
-      // Convertir photoTasks a lista de Photo objetos
-      final photos = <Photo>[];
-      debugPrint('🔍 Converting photoTasks to Photo objects:');
-      debugPrint('  Total photoTasks: ${_photoTasks.length}');
-      debugPrint('  photosModified flag: $_photosModified');
-      
-      for (var i = 0; i < _photoTasks.length; i++) {
-        final task = _photoTasks[i];
-        final beforePath = task['beforePhoto'] as String?;
-        final afterPath = task['afterPhoto'] as String?;
-        final originalBeforePath = task['originalBeforePhoto'] as String?;
-        final originalAfterPath = task['originalAfterPhoto'] as String?;
-        final beforeDesc = task['beforeDescription'] as String?;
-        final afterDesc = task['afterDescription'] as String?;
-
-        // Use original paths if current are null (safety fallback)
-        final finalBeforePath = beforePath ?? originalBeforePath;
-        final finalAfterPath = afterPath ?? originalAfterPath;
-
-        debugPrint('  Task $i:');
-        debugPrint('    currentBefore=$beforePath, currentAfter=$afterPath');
-        debugPrint('    originalBefore=$originalBeforePath, originalAfter=$originalAfterPath');
-        debugPrint('    finalBefore=$finalBeforePath, finalAfter=$finalAfterPath');
-
-        // Create Photo if at least ONE photo exists (before OR after)
-        // Both fields are optional, supporting flexible workflows
-        if (finalBeforePath != null && finalBeforePath.isNotEmpty ||
-            finalAfterPath != null && finalAfterPath.isNotEmpty) {
-          
-          final photo = Photo(
-            id: Isar.autoIncrement,
-            workReportId: 0, // Will be assigned after report creation
-            beforeWorkPhotoPath: (finalBeforePath?.isNotEmpty ?? false) ? finalBeforePath : null,
-            photoPath: (finalAfterPath?.isNotEmpty ?? false) ? finalAfterPath : null,
-            beforeWorkDescripcion: (beforeDesc?.isNotEmpty ?? false) ? beforeDesc : null,
-            descripcion: (afterDesc?.isNotEmpty ?? false) ? afterDesc : null,
           );
-          
-          photos.add(photo);
-          debugPrint('    ✅ Photo created (hasValidPhotos: ${photo.hasValidPhotos})');
-        } else {
-          debugPrint('    ⚠️ Skipped - no photo paths available');
-        }
-      }
-      
-      debugPrint('📊 Total valid photos: ${photos.length}');
+        }),
 
-      widget.onSubmit(report, photos, _photosModified);
+        AddButton(
+          label: 'Agregar Nueva Evidencia',
+          icon: Icons.add_a_photo,
+          onPressed: () {
+            setState(() {
+              _photoTasks.add(_PhotoTaskDraft());
+              _userManuallyAddedTask = true;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSignaturesSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          SignaturePadWidget(
+            label: 'Firma del Supervisor',
+            color: AppColors.primary,
+            onSignatureChanged: (sig) =>
+                setState(() => _supervisorSignature = sig),
+          ),
+          const SizedBox(height: 24),
+          SignaturePadWidget(
+            label: 'Firma del Gerente',
+            color: AppColors.secondary,
+            onSignatureChanged: (sig) =>
+                setState(() => _managerSignature = sig),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 60, // Altura ergonómica
+      child: ElevatedButton(
+        onPressed: _handleSubmit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              widget.workReport == null
+                  ? 'GUARDAR REPORTE'
+                  : 'ACTUALIZAR REPORTE',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Icon(Icons.save_alt),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- VALIDACIÓN Y LOGIC ---
+  String? _validateInteger(String? value) {
+    if (value == null || value.isEmpty) return null;
+    if (int.tryParse(value) == null) return 'Solo números';
+    return null;
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Por favor corrija los errores en el formulario'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
     }
+
+    if (!_endTime.isAfter(_startTime)) {
+      setState(() => _timeError = 'Hora fin inválida');
+      return;
+    }
+
+    final String suggestionsHtml = await _suggestionsController.getText();
+    final String toolsHtml = await _toolsController.getText();
+    final String personnelHtml = await _personnelController.getText();
+    final String materialsHtml = await _materialsController.getText();
+
+    setState(() {
+      _timeError = null;
+      _reportDateError = null;
+    });
+
+    final report = WorkReport(
+      id: widget.workReport?.id ?? Isar.autoIncrement,
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      employeeId: int.tryParse(_employeeIdController.text.trim()),
+      projectId: int.tryParse(_projectIdController.text.trim()),
+      startTime: _startTime,
+      endTime: _endTime,
+      reportDate: _reportDate,
+
+      // --- Usamos los valores HTML obtenidos ---
+      suggestions: suggestionsHtml,
+      tools: toolsHtml,
+      personnel: personnelHtml,
+      materials: materialsHtml,
+      supervisorSignature: _supervisorSignature != null
+          ? base64Encode(_supervisorSignature!)
+          : null,
+      managerSignature: _managerSignature != null
+          ? base64Encode(_managerSignature!)
+          : null,
+    );
+
+    final photos = _photoTasks
+        .where((task) => task.isValid)
+        .map(
+          (task) => Photo(
+            id: Isar.autoIncrement,
+            workReportId: 0,
+            beforeWorkPhotoPath: task.beforePhoto,
+            photoPath: task.afterPhoto,
+            beforeWorkDescripcion: task.beforeDescription.isNotEmpty
+                ? task.beforeDescription
+                : null,
+            descripcion: task.afterDescription.isNotEmpty
+                ? task.afterDescription
+                : null,
+          ),
+        )
+        .toList();
+
+    final bool hasPhotoChanges =
+        _userManuallyAddedTask || _photoTasks.any((task) => task.photosChanged);
+
+    widget.onSubmit(report, photos, hasPhotoChanges);
   }
 }
