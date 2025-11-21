@@ -1,25 +1,22 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:bitacora/widgets/inputs/CustomRichEditor.dart';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
+import 'package:html_editor_enhanced/html_editor.dart';
 
-// Asumimos que estos imports existen en tu proyecto
 import '../models/work_report.dart';
 import '../models/photo.dart';
 import '../config/app_colors.dart';
 import 'before_after_photo_card.dart';
 import 'signature_pad_widget.dart';
-import 'section_title.dart';
-import 'add_button.dart';
 import 'inputs/modern_text_field.dart';
 import 'inputs/modern_date_picker.dart';
 import 'time_range_picker.dart';
-import 'package:html_editor_enhanced/html_editor.dart'; // <--- Nuevo import
-import 'custom_floating_tab_bar.dart';
 
+// =============================================================================
+// CLASES AUXILIARES
+// =============================================================================
 
-// --- LOGIC HELPERS (Sin cambios, tu lógica es sólida) ---
 class _PhotoTaskDraft {
   String? beforePhoto;
   String? afterPhoto;
@@ -54,12 +51,14 @@ class _PhotoTaskDraft {
       (beforePhoto?.isNotEmpty ?? false) || (afterPhoto?.isNotEmpty ?? false);
 }
 
-// --- MAIN WIDGET ---
+// =============================================================================
+// WIDGET PRINCIPAL
+// =============================================================================
+
 class WorkReportForm extends StatefulWidget {
   final WorkReport? workReport;
   final List<Photo>? existingPhotos;
-  final Function(WorkReport report, List<Photo> photos, bool photosChanged)
-  onSubmit;
+  final Function(WorkReport report, List<Photo> photos, bool photosChanged) onSubmit;
 
   const WorkReportForm({
     super.key,
@@ -75,26 +74,25 @@ class WorkReportForm extends StatefulWidget {
 class _WorkReportFormState extends State<WorkReportForm> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
+  // --- Controllers Nativos ---
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _employeeIdController;
   late final TextEditingController _projectIdController;
 
-  // --- 1. CAMBIO: Nuevos Controladores HTML ---
+  // --- Controllers HTML ---
   late final HtmlEditorController _suggestionsController;
   late final HtmlEditorController _toolsController;
   late final HtmlEditorController _personnelController;
   late final HtmlEditorController _materialsController;
 
-  // --- 2. CAMBIO: Variables para Texto Inicial ---
-  // Necesitamos guardar el texto inicial en variables string para pasarlas al widget
-  String? _initialSuggestions;
-  String? _initialTools;
-  String? _initialPersonnel;
-  String? _initialMaterials;
+  // --- VARIABLES DE ESTADO PARA TEXTO HTML ---
+  String _suggestionsContent = '';
+  String _toolsContent = '';
+  String _personnelContent = '';
+  String _materialsContent = '';
 
-  // State
+  // --- State General ---
   DateTime _startTime = DateTime.now();
   DateTime _endTime = DateTime.now();
   DateTime _reportDate = DateTime.now();
@@ -108,6 +106,9 @@ class _WorkReportFormState extends State<WorkReportForm> {
   // Firmas
   Uint8List? _supervisorSignature;
   Uint8List? _managerSignature;
+
+  // 🔧 MEJORA 1: Flag para saber si los editores ya se inicializaron
+  bool _editorsInitialized = false;
 
   @override
   void initState() {
@@ -123,7 +124,6 @@ class _WorkReportFormState extends State<WorkReportForm> {
     _employeeIdController = TextEditingController();
     _projectIdController = TextEditingController();
 
-    // --- 3. CAMBIO: Instanciación simple ---
     _suggestionsController = HtmlEditorController();
     _toolsController = HtmlEditorController();
     _personnelController = HtmlEditorController();
@@ -133,21 +133,33 @@ class _WorkReportFormState extends State<WorkReportForm> {
   void _loadFormData() {
     if (widget.workReport == null) return;
     final report = widget.workReport!;
+    
     _nameController.text = report.name;
     _descriptionController.text = report.description;
     _employeeIdController.text = report.employeeId?.toString() ?? '';
     _projectIdController.text = report.projectId?.toString() ?? '';
 
-    // --- 4. CAMBIO: Asignar a variables Strings (Asumiendo que tu BD ya guarda HTML o String) ---
-    // Si tu BD tiene JSON de Quill, esto se verá "feo" la primera vez hasta que guardes como HTML.
-    _initialSuggestions = report.suggestions;
-    _initialTools = report.tools;
-    _initialPersonnel = report.personnel;
-    _initialMaterials = report.materials;
+    // 🔧 MEJORA 2: Cargar valores INMEDIATAMENTE en las variables de estado
+    // Esto garantiza que si el usuario no edita, se guarde el contenido original
+    _suggestionsContent = report.suggestions ?? '';
+    _toolsContent = report.tools ?? '';
+    _personnelContent = report.personnel ?? '';
+    _materialsContent = report.materials ?? '';
 
     _startTime = report.startTime;
     _endTime = report.endTime;
     _reportDate = report.reportDate;
+    
+    if (report.supervisorSignature != null) {
+       try {
+         _supervisorSignature = base64Decode(report.supervisorSignature!);
+       } catch (_) {}
+    }
+    if (report.managerSignature != null) {
+       try {
+         _managerSignature = base64Decode(report.managerSignature!);
+       } catch (_) {}
+    }
   }
 
   @override
@@ -186,10 +198,39 @@ class _WorkReportFormState extends State<WorkReportForm> {
     super.dispose();
   }
 
+  // 🔧 MEJORA 3: Callback para cuando el editor HTML termina de cargar
+  void _onEditorInitialized(String fieldName, HtmlEditorController controller) {
+    if (!_editorsInitialized && widget.workReport != null) {
+      // Al inicializarse, sincronizamos el contenido del editor con la variable
+      Future.delayed(const Duration(milliseconds: 100), () async {
+        try {
+          final content = await controller.getText();
+          setState(() {
+            switch (fieldName) {
+              case 'suggestions':
+                _suggestionsContent = content;
+                break;
+              case 'tools':
+                _toolsContent = content;
+                break;
+              case 'personnel':
+                _personnelContent = content;
+                break;
+              case 'materials':
+                _materialsContent = content;
+                break;
+            }
+          });
+        } catch (e) {
+          debugPrint('Error al inicializar $fieldName: $e');
+        }
+      });
+    }
+  }
+
   // --- UI BUILD METHOD ---
   @override
   Widget build(BuildContext context) {
-    // UI/UX Tip: GestureDetector oculta el teclado al tocar fuera
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Form(
@@ -197,23 +238,26 @@ class _WorkReportFormState extends State<WorkReportForm> {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           children: [
-            _buildHeaderInfo(),
-            const SizedBox(height: 24),
             _buildSectionTitle('Detalles Generales', Icons.dashboard_customize),
             _buildBasicInfoSection(),
             const SizedBox(height: 24),
+            
             _buildSectionTitle('Cronología', Icons.access_time_filled),
             _buildDateTimeSection(),
             const SizedBox(height: 24),
+            
             _buildSectionTitle('Bitácora', Icons.menu_book),
             _buildRichTextDetails(),
             const SizedBox(height: 24),
+            
             _buildSectionTitle('Evidencia Fotográfica', Icons.camera_alt),
             _buildPhotosSection(),
             const SizedBox(height: 24),
+            
             _buildSectionTitle('Conformidad', Icons.verified_user),
             _buildSignaturesSection(),
             const SizedBox(height: 40),
+            
             _buildSubmitButton(),
             const SizedBox(height: 40),
           ],
@@ -222,37 +266,33 @@ class _WorkReportFormState extends State<WorkReportForm> {
     );
   }
 
-  // --- SECCIONES MEJORADAS ---
-
-  Widget _buildHeaderInfo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.workReport == null ? 'Nuevo Reporte' : 'Editar Reporte',
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.white, // Asumiendo fondo oscuro
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Complete la información detallada del servicio realizado.',
-          style: TextStyle(fontSize: 16, color: Colors.grey[400]),
-        ),
-      ],
-    );
-  }
+  // --- SECCIONES ---
 
   Widget _buildSectionTitle(String title, IconData icon) {
-    return SectionTitle(title: title, icon: icon);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, left: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 12),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBasicInfoSection() {
     return Column(
       children: [
-        ModernTextField(
+        _ModernTextField(
           controller: _nameController,
           label: 'Título del Reporte',
           hint: 'Ej: Mantenimiento Preventivo Torre A',
@@ -260,10 +300,10 @@ class _WorkReportFormState extends State<WorkReportForm> {
           validator: (v) => v?.isEmpty ?? true ? 'Requerido' : null,
         ),
         const SizedBox(height: 16),
-        ModernTextField(
+        _ModernTextField(
           controller: _descriptionController,
           label: 'Descripción',
-          hint: 'Resumen ejecutivo de las actividades...',
+          hint: 'Resumen ejecutivo...',
           icon: Icons.short_text,
           maxLines: 3,
           validator: (v) => v?.isEmpty ?? true ? 'Requerido' : null,
@@ -272,7 +312,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
         Row(
           children: [
             Expanded(
-              child: ModernTextField(
+              child: _ModernTextField(
                 controller: _employeeIdController,
                 label: 'ID Empleado',
                 icon: Icons.badge_outlined,
@@ -282,7 +322,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: ModernTextField(
+              child: _ModernTextField(
                 controller: _projectIdController,
                 label: 'ID Proyecto',
                 icon: Icons.folder_open,
@@ -306,7 +346,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
       ),
       child: Column(
         children: [
-          ModernDatePicker(
+          _ModernDatePicker(
             label: 'Fecha del Servicio',
             value: _reportDate,
             icon: Icons.calendar_month,
@@ -320,7 +360,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
                 builder: (context, child) {
                   return Theme(
                     data: ThemeData.dark().copyWith(
-                      colorScheme: ColorScheme.dark(primary: AppColors.primary),
+                      colorScheme: const ColorScheme.dark(primary: AppColors.primary),
                     ),
                     child: child!,
                   );
@@ -330,55 +370,132 @@ class _WorkReportFormState extends State<WorkReportForm> {
             },
           ),
           const SizedBox(height: 16),
-          TimeRangePicker(
-            startTime: _startTime,
-            endTime: _endTime,
-            onStartTimeChanged: (time) => setState(() {
-              _startTime = time;
-              _timeError = null;
-            }),
-            onEndTimeChanged: (time) => setState(() {
-              _endTime = time;
-              _timeError = null;
-            }),
-            errorText: _timeError,
-          ),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _ModernDatePicker(
+                  label: 'Inicio', 
+                  value: _startTime, 
+                  icon: Icons.schedule,
+                  isTime: true,
+                  onTap: () => _selectTime(true)
+                )
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ModernDatePicker(
+                  label: 'Fin', 
+                  value: _endTime, 
+                  icon: Icons.timer_off,
+                  isTime: true,
+                  errorText: _timeError,
+                  onTap: () => _selectTime(false)
+                )
+              ),
+            ]
+          )
         ],
       ),
     );
   }
+  
+  Future<void> _selectTime(bool isStart) async {
+    final initial = isStart ? _startTime : _endTime;
+    final time = await showTimePicker(
+      context: context, 
+      initialTime: TimeOfDay.fromDateTime(initial)
+    );
+    if(time != null) {
+      final dt = DateTime(initial.year, initial.month, initial.day, time.hour, time.minute);
+      setState(() {
+        if(isStart) _startTime = dt; else _endTime = dt;
+        _timeError = null;
+      });
+    }
+  }
 
   Widget _buildRichTextDetails() {
-    // Usamos un Layout Grid conceptual
+    final report = widget.workReport;
+    
     return Column(
       children: [
-        CustomRichEditor(
-          controller: _suggestionsController,
+        _buildBasicHtmlEditor(
           label: 'Sugerencias',
-          initialText: _initialSuggestions, // Pasamos el texto aquí
-          hintText: 'Ingrese sugerencias...',
+          controller: _suggestionsController,
+          initialText: report?.suggestions,
+          hint: 'Ingrese sugerencias...',
+          onChanged: (val) => _suggestionsContent = val ?? '',
+          onInit: () => _onEditorInitialized('suggestions', _suggestionsController),
         ),
         const SizedBox(height: 16),
-        const SizedBox(height: 16),
-        CustomRichEditor(
-          controller: _toolsController,
+        _buildBasicHtmlEditor(
           label: 'Herramientas',
-          initialText: _initialTools,
-          hintText: 'Listado de herramientas...',
+          controller: _toolsController,
+          initialText: report?.tools,
+          hint: 'Listado de herramientas...',
+          onChanged: (val) => _toolsContent = val ?? '',
+          onInit: () => _onEditorInitialized('tools', _toolsController),
         ),
         const SizedBox(height: 16),
-        CustomRichEditor(
-          controller: _personnelController,
+        _buildBasicHtmlEditor(
           label: 'Personal Involucrado',
-          initialText: _initialPersonnel,
-          hintText: 'Nombres del equipo...',
+          controller: _personnelController,
+          initialText: report?.personnel,
+          hint: 'Nombres del equipo...',
+          onChanged: (val) => _personnelContent = val ?? '',
+          onInit: () => _onEditorInitialized('personnel', _personnelController),
         ),
         const SizedBox(height: 16),
-        CustomRichEditor(
-          controller: _materialsController,
+        _buildBasicHtmlEditor(
           label: 'Materiales',
-          initialText: _initialMaterials,
-          hintText: 'Materiales utilizados...',
+          controller: _materialsController,
+          initialText: report?.materials,
+          hint: 'Materiales utilizados...',
+          onChanged: (val) => _materialsContent = val ?? '',
+          onInit: () => _onEditorInitialized('materials', _materialsController),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBasicHtmlEditor({
+    required String label,
+    required HtmlEditorController controller,
+    String? initialText,
+    required String hint,
+    required Function(String?) onChanged,
+    required VoidCallback onInit,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ),
+        HtmlEditor(
+          controller: controller,
+          htmlEditorOptions: HtmlEditorOptions(
+            hint: hint,
+            initialText: initialText,
+            darkMode: true,
+          ),
+          callbacks: Callbacks(
+            onChangeContent: onChanged,
+            onInit: onInit,
+          ),
+          otherOptions: OtherOptions(
+            height: 200,
+          ),
         ),
       ],
     );
@@ -407,16 +524,34 @@ class _WorkReportFormState extends State<WorkReportForm> {
             ),
           );
         }),
-
-        AddButton(
-          label: 'Agregar Nueva Evidencia',
-          icon: Icons.add_a_photo,
-          onPressed: () {
+        
+        InkWell(
+          onTap: () {
             setState(() {
               _photoTasks.add(_PhotoTaskDraft());
               _userManuallyAddedTask = true;
             });
           },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.primary, width: 1.5),
+              borderRadius: BorderRadius.circular(16),
+              color: AppColors.primary.withOpacity(0.05),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.add_a_photo, color: AppColors.primary, size: 32),
+                const SizedBox(height: 8),
+                const Text(
+                  "Agregar Nueva Evidencia",
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                )
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -434,6 +569,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
           SignaturePadWidget(
             label: 'Firma del Supervisor',
             color: AppColors.primary,
+            initialSignature: widget.workReport?.supervisorSignature,
             onSignatureChanged: (sig) =>
                 setState(() => _supervisorSignature = sig),
           ),
@@ -441,6 +577,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
           SignaturePadWidget(
             label: 'Firma del Gerente',
             color: AppColors.secondary,
+            initialSignature: widget.workReport?.managerSignature,
             onSignatureChanged: (sig) =>
                 setState(() => _managerSignature = sig),
           ),
@@ -452,7 +589,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
-      height: 60, // Altura ergonómica
+      height: 60,
       child: ElevatedButton(
         onPressed: _handleSubmit,
         style: ElevatedButton.styleFrom(
@@ -485,7 +622,7 @@ class _WorkReportFormState extends State<WorkReportForm> {
     );
   }
 
-  // --- VALIDACIÓN Y LOGIC ---
+  // --- VALIDACIÓN Y LÓGICA FINAL ---
   String? _validateInteger(String? value) {
     if (value == null || value.isEmpty) return null;
     if (int.tryParse(value) == null) return 'Solo números';
@@ -495,8 +632,8 @@ class _WorkReportFormState extends State<WorkReportForm> {
   Future<void> _handleSubmit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Por favor corrija los errores en el formulario'),
+        const SnackBar(
+          content: Text('Por favor corrija los errores en el formulario'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -509,16 +646,14 @@ class _WorkReportFormState extends State<WorkReportForm> {
       return;
     }
 
-    final String suggestionsHtml = await _suggestionsController.getText();
-    final String toolsHtml = await _toolsController.getText();
-    final String personnelHtml = await _personnelController.getText();
-    final String materialsHtml = await _materialsController.getText();
+    FocusManager.instance.primaryFocus?.unfocus();
 
     setState(() {
       _timeError = null;
       _reportDateError = null;
     });
 
+    // 🎯 Las variables ya tienen el contenido correcto
     final report = WorkReport(
       id: widget.workReport?.id ?? Isar.autoIncrement,
       name: _nameController.text.trim(),
@@ -529,17 +664,18 @@ class _WorkReportFormState extends State<WorkReportForm> {
       endTime: _endTime,
       reportDate: _reportDate,
 
-      // --- Usamos los valores HTML obtenidos ---
-      suggestions: suggestionsHtml,
-      tools: toolsHtml,
-      personnel: personnelHtml,
-      materials: materialsHtml,
+      // ✅ Usamos directamente las variables de estado
+      suggestions: _suggestionsContent,
+      tools: _toolsContent,
+      personnel: _personnelContent,
+      materials: _materialsContent,
+
       supervisorSignature: _supervisorSignature != null
           ? base64Encode(_supervisorSignature!)
-          : null,
+          : widget.workReport?.supervisorSignature,
       managerSignature: _managerSignature != null
           ? base64Encode(_managerSignature!)
-          : null,
+          : widget.workReport?.managerSignature,
     );
 
     final photos = _photoTasks
@@ -564,5 +700,131 @@ class _WorkReportFormState extends State<WorkReportForm> {
         _userManuallyAddedTask || _photoTasks.any((task) => task.photosChanged);
 
     widget.onSubmit(report, photos, hasPhotoChanges);
+  }
+}
+
+// =============================================================================
+// WIDGETS ATÓMICOS LOCALES
+// =============================================================================
+
+class _ModernTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String? hint;
+  final IconData icon;
+  final int maxLines;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  const _ModernTextField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.hint,
+    this.maxLines = 1,
+    this.keyboardType,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      validator: validator,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey[600]),
+        prefixIcon: Icon(icon, color: AppColors.textSecondary),
+        filled: true,
+        fillColor: AppColors.surfaceDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.error.withOpacity(0.5), width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.all(20),
+      ),
+    );
+  }
+}
+
+class _ModernDatePicker extends StatelessWidget {
+  final String label;
+  final DateTime value;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isTime;
+  final String? errorText;
+
+  const _ModernDatePicker({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+    this.isTime = false,
+    this.errorText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayValue = isTime
+        ? '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}'
+        : '${value.day}/${value.month}/${value.year}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundDark,
+              borderRadius: BorderRadius.circular(16),
+              border: errorText != null 
+                  ? Border.all(color: AppColors.error)
+                  : Border.all(color: Colors.transparent),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white70, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  displayValue,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 8),
+            child: Text(errorText!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+          ),
+      ],
+    );
   }
 }
