@@ -7,6 +7,7 @@ import '../viewmodels/work_report_viewmodel.dart';
 import '../viewmodels/server_work_report_viewmodel.dart';
 import '../providers/app_providers.dart';
 import '../models/work_report.dart';
+import '../widgets/card_work_report.dart';
 import '../models/work_report_api_models.dart';
 import '../config/app_colors.dart'; // Tu archivo de colores
 import 'server_work_report_detail_page.dart';
@@ -231,7 +232,7 @@ class _WorkReportListPageState extends ConsumerState<WorkReportListPage>
       padding: const EdgeInsets.all(16),
       itemCount: state.reports.length,
       itemBuilder: (context, index) {
-        return _LocalReportCard(
+        return LocalReportCard(
           report: state.reports[index],
           onTap: () => _navigateToDetail(context, state.reports[index]),
           onEdit: () => _navigateToEdit(context, state.reports[index]),
@@ -291,7 +292,7 @@ class _WorkReportListPageState extends ConsumerState<WorkReportListPage>
             );
           }
           
-          return _ServerReportCard(
+          return ServerReportCard(
             report: serverState.reports[index],
             onTap: () {
                Navigator.of(context).push(
@@ -400,253 +401,3 @@ class _WorkReportListPageState extends ConsumerState<WorkReportListPage>
 // =============================================================================
 
 /// Tarjeta base para evitar código repetido entre Local y Server
-class _BaseReportCard extends StatelessWidget {
-  final String title;
-  final String date;
-  final String description;
-  final String employeeName;
-  final String projectName;
-  final bool isLocal;
-  final VoidCallback onTap;
-  final Widget? trailingActions;
-
-  const _BaseReportCard({
-    required this.title,
-    required this.date,
-    required this.description,
-    required this.employeeName,
-    required this.projectName,
-    required this.isLocal,
-    required this.onTap,
-    this.trailingActions,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderDark,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // HEADER: Chip Estado + Fecha
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: (isLocal ? AppColors.success : AppColors.info).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: (isLocal ? AppColors.success : AppColors.info).withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isLocal ? Icons.smartphone : Icons.cloud_done, 
-                            size: 12, 
-                            color: isLocal ? AppColors.success : AppColors.info
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            isLocal ? 'LOCAL' : 'SERVER',
-                            style: TextStyle(
-                              fontSize: 10, 
-                              fontWeight: FontWeight.bold,
-                              color: isLocal ? AppColors.success : AppColors.info,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      date,
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // TITULO Y ACCIONES
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            description,
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (trailingActions != null) ...[
-                      const SizedBox(width: 8),
-                      trailingActions!,
-                    ],
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.borderDark),
-                const SizedBox(height: 12),
-
-                // FOOTER: Metadatos
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetaRow(Icons.person_outline, employeeName),
-                    ),
-                    Expanded(
-                      child: _buildMetaRow(Icons.folder_open, projectName),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetaRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: AppColors.textSecondary),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Tarjeta Específica para Reportes Locales
-class _LocalReportCard extends StatelessWidget {
-  final WorkReport report;
-  final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  const _LocalReportCard({
-    required this.report,
-    required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _BaseReportCard(
-      title: report.name,
-      date: _formatDate(report.reportDate),
-      description: report.description,
-      employeeName: 'Emp: ${report.employeeId}', // Adaptar si tienes nombres
-      projectName: 'Proy: ${report.projectId}',
-      isLocal: true,
-      onTap: onTap,
-      trailingActions: Row(
-        children: [
-          _ActionButton(icon: Icons.edit, color: AppColors.primary, onTap: onEdit),
-          const SizedBox(width: 8),
-          _ActionButton(icon: Icons.delete, color: AppColors.error, onTap: onDelete),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
-}
-
-/// Tarjeta Específica para Reportes de Servidor
-class _ServerReportCard extends StatelessWidget {
-  final WorkReportData report;
-  final VoidCallback onTap;
-
-  const _ServerReportCard({required this.report, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return _BaseReportCard(
-      title: report.name,
-      date: report.reportDate, // Asumo que ya viene formateada del API
-      description: report.description,
-      employeeName: report.employee.fullName,
-      projectName: report.project.name,
-      isLocal: false,
-      onTap: onTap,
-      trailingActions: const Icon(Icons.chevron_right, color: Colors.grey),
-    );
-  }
-}
-
-/// Botón pequeño para acciones en tarjeta
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionButton({required this.icon, required this.color, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, size: 16, color: color),
-      ),
-    );
-  }
-}

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_colors.dart'; // Tu archivo de colores
-import 'package:bitacora/widgets/custom_floating_tab_bar.dart';
 import '../models/work_report.dart';
 import '../models/photo.dart';
 import '../viewmodels/work_report_viewmodel.dart';
 import '../providers/app_providers.dart';
 import '../widgets/work_report_form.dart';
-import '../widgets/tab_item.dart';
 import '../widgets/loading_overlay.dart';
+import '../widgets/modern_date_picker.dart';
 
 /// Page for creating or editing a work report
 class WorkReportFormPage extends ConsumerStatefulWidget {
@@ -100,15 +99,6 @@ class _WorkReportFormPageState extends ConsumerState<WorkReportFormPage> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        appBar: CustomFloatingAppBar(
-          title: isEditing ? 'Editar Reporte' : 'Crear nuevo Reporte',
-          isEditing: isEditing,
-          tabs: const [
-            ModernTabItem(title: 'General', count: 0),
-            ModernTabItem(title: 'Fotografías', count: 0),
-            ModernTabItem(title: 'Firmas', count: 0),
-          ],
-        ),
         body: Container(
           color: Colors.black,
           child: TabBarView(

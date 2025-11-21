@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import '../models/photo.dart';
-import 'photo_display_widget.dart';
+// Asumimos que este widget existe en tu proyecto, o usa un Image.network/file básico
+import 'photo_display_widget.dart'; 
+import '../config/app_colors.dart'; 
 
-/// Widget reutilizable para mostrar una lista de fotos de un reporte
-/// Muestra fotos antes/después en formato de tarjeta
 class PhotoListWidget extends StatelessWidget {
   final List<Photo> photos;
   final VoidCallback? onRefresh;
   final Function(Photo)? onPhotoTap;
+  final bool isDarkTheme; // Opcional, para adaptar fondos
 
   const PhotoListWidget({
     super.key,
     required this.photos,
     this.onRefresh,
     this.onPhotoTap,
+    this.isDarkTheme = true, // Asumiendo el tema oscuro por defecto de los anteriores
   });
 
   @override
@@ -22,278 +24,310 @@ class PhotoListWidget extends StatelessWidget {
       return _buildEmptyState();
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        onRefresh?.call();
-      },
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: photos.length,
-        itemBuilder: (context, index) {
-          return _buildPhotoCard(context, photos[index], index);
-        },
-      ),
+    // Usamos un Column en lugar de ListView con shrinkWrap para mejor performance
+    // si este widget ya está dentro de un scroll view padre.
+    return Column(
+      children: photos.asMap().entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: _EvidenceCard(
+            photo: entry.value,
+            index: entry.key,
+            onTap: () => onPhotoTap?.call(entry.value),
+          ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderDark, style: BorderStyle.solid),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.hide_image_outlined, size: 48, color: AppColors.textSecondary),
+          const SizedBox(height: 16),
+          Text(
+            'Sin evidencia fotográfica',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'No se han adjuntado fotos a este reporte.',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Widget Privado: Tarjeta de Evidencia Individual
+/// Encapsula la lógica de visualización de una tarea (Antes/Después)
+class _EvidenceCard extends StatelessWidget {
+  final Photo photo;
+  final int index;
+  final VoidCallback onTap;
+
+  const _EvidenceCard({
+    required this.photo,
+    required this.index,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBefore = photo.beforeWorkPhotoPath?.isNotEmpty ?? false;
+    final hasAfter = photo.photoPath?.isNotEmpty ?? false;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias, // Para que las imágenes respeten los bordes
+      child: InkWell(
+        onTap: onTap,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.photo_library_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay fotografías disponibles',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Las fotos aparecerán aquí una vez agregadas',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
-              textAlign: TextAlign.center,
-            ),
+            // --- Header de la Tarjeta ---
+            _buildHeader(),
+
+            // --- Cuerpo de Imágenes ---
+            if (hasBefore && hasAfter)
+              // Si hay ambas, mostramos comparación Split
+              _buildSplitComparison(photo.beforeWorkPhotoPath!, photo.photoPath!)
+            else if (hasBefore)
+               _buildSingleImage(photo.beforeWorkPhotoPath!, true)
+            else if (hasAfter)
+               _buildSingleImage(photo.photoPath!, false),
+
+            // --- Footer con Descripciones ---
+            if (hasBefore || hasAfter)
+              _buildDescriptionFooter(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPhotoCard(BuildContext context, Photo photo, int index) {
-    final hasBeforePhoto = photo.beforeWorkPhotoPath != null && 
-                           photo.beforeWorkPhotoPath!.isNotEmpty;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () => onPhotoTap?.call(photo),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
             children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2A8D8D),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Tarea ${index + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+                ),
+                child: Text(
+                  'TAREA #${index + 1}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 1,
                   ),
-                  const Spacer(),
-                  if (hasBeforePhoto)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.compare_arrows,
-                            size: 16,
-                            color: Colors.orange,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Antes/Después',
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
+                ),
               ),
-              const SizedBox(height: 16),
-
-              // Foto ANTES (si existe)
-              if (hasBeforePhoto) ...[
-                _buildPhotoSection(
-                  title: '📸 ANTES del trabajo',
-                  photoPath: photo.beforeWorkPhotoPath!,
-                  description: photo.beforeWorkDescripcion,
-                  color: Colors.orange,
+              const SizedBox(width: 8),
+              if (photo.createdAt != null)
+                Text(
+                  _formatDate(photo.createdAt!),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
                 ),
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
-              ],
-
-              // Foto DESPUÉS (principal) - solo mostrar si existe
-              if (photo.photoPath != null && photo.photoPath!.isNotEmpty) ...[
-                _buildPhotoSection(
-                  title: '✅ DESPUÉS del trabajo',
-                  photoPath: photo.photoPath!,
-                  description: photo.descripcion,
-                  color: Colors.green,
-                ),
-              ],
-
-              // Metadata
-              const SizedBox(height: 12),
-              _buildMetadata(photo),
             ],
           ),
-        ),
+          const Icon(Icons.chevron_right, color: Colors.grey),
+        ],
       ),
     );
   }
 
-  Widget _buildPhotoSection({
-    required String title,
-    required String photoPath,
-    required String? description,
-    required Color color,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Título
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
+  // Layout para cuando hay ANTES y DESPUÉS (Estilo "Split Screen")
+  Widget _buildSplitComparison(String beforeCtx, String afterCtx) {
+    return SizedBox(
+      height: 200,
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildImageSection(
+              path: beforeCtx, 
+              label: 'ANTES', 
+              labelColor: Colors.amber,
+              isLeft: true
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          Container(width: 1, color: AppColors.backgroundDark), // Divisor delgado
+          Expanded(
+            child: _buildImageSection(
+              path: afterCtx, 
+              label: 'DESPUÉS', 
+              labelColor: AppColors.secondary, // Verde azulado
+              isLeft: false
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-        // Foto
+  // Layout para una sola imagen (full width)
+  Widget _buildSingleImage(String path, bool isBefore) {
+    return SizedBox(
+      height: 220,
+      width: double.infinity,
+      child: _buildImageSection(
+        path: path,
+        label: isBefore ? 'ESTADO INICIAL' : 'RESULTADO FINAL',
+        labelColor: isBefore ? Colors.amber : AppColors.secondary,
+        isLeft: true, // No afecta en single mode
+        isSingle: true,
+      ),
+    );
+  }
+
+  Widget _buildImageSection({
+    required String path, 
+    required String label, 
+    required Color labelColor,
+    required bool isLeft,
+    bool isSingle = false,
+  }) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1. La Imagen
         PhotoDisplayWidget(
-          photoPath: photoPath,
-          height: 200,
-          width: double.infinity,
+          photoPath: path,
           fit: BoxFit.cover,
+          // height/width controlados por el padre
         ),
-
-        // Descripción
-        if (description != null && description.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
+        
+        // 2. Gradiente para legibilidad de etiqueta
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 60,
+          child: Container(
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: color.withValues(alpha: 0.2),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.7),
+                  Colors.transparent,
+                ],
               ),
             ),
+          ),
+        ),
+
+        // 3. Etiqueta (Badge)
+        Positioned(
+          top: 12,
+          left: isSingle ? 16 : (isLeft ? 12 : null), // Ajuste fino de posición
+          right: isSingle ? null : (isLeft ? null : 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: labelColor.withOpacity(0.8)),
+            ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.description_outlined,
-                  size: 20,
-                  color: color,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[800],
-                      height: 1.4,
-                    ),
+                Icon(Icons.circle, size: 8, color: labelColor),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ],
     );
   }
 
-  Widget _buildMetadata(Photo photo) {
-    final createdAt = photo.createdAt;
-    final hasMetadata = createdAt != null;
-
-    if (!hasMetadata) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildDescriptionFooter(BuildContext context) {
+    final beforeDesc = photo.beforeWorkDescripcion;
+    final afterDesc = photo.descripcion;
+    final hasBoth = (beforeDesc?.isNotEmpty ?? false) && (afterDesc?.isNotEmpty ?? false);
 
     return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
+      color: AppColors.backgroundDark.withOpacity(0.3), // Fondo sutil para texto
+      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.access_time,
-            size: 16,
-            color: Colors.grey[600],
+          if (beforeDesc?.isNotEmpty ?? false)
+            _buildRichDescription('Antes:', beforeDesc!, Colors.amber),
+          
+          if (hasBoth) const SizedBox(height: 8), // Separación si hay ambos
+
+          if (afterDesc?.isNotEmpty ?? false)
+            _buildRichDescription('Después:', afterDesc!, AppColors.secondary),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRichDescription(String label, String text, Color color) {
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(fontSize: 13, height: 1.4, color: Colors.white70), // Base style
+        children: [
+          TextSpan(
+            text: '$label ',
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
           ),
-          const SizedBox(width: 6),
-          Text(
-            'Registrado: ${_formatDate(createdAt)}',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
+          TextSpan(text: text),
         ],
       ),
     );
   }
 
   String _formatDate(DateTime date) {
+    // Lógica simplificada y limpia
     final now = DateTime.now();
-    final difference = now.difference(date);
+    final diff = now.difference(date);
 
-    if (difference.inDays == 0) {
-      return 'Hoy a las ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays == 1) {
-      return 'Ayer a las ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays < 7) {
-      return 'Hace ${difference.inDays} días';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
+    if (diff.inDays == 0) return 'Hoy, ${date.hour.toString().padLeft(2,'0')}:${date.minute.toString().padLeft(2,'0')}';
+    if (diff.inDays < 7) return 'Hace ${diff.inDays} días';
+    return '${date.day}/${date.month}';
   }
 }
