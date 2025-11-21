@@ -3,8 +3,9 @@ import 'package:bitacora/models/work_report.dart';
 import 'package:bitacora/models/work_report_api_models.dart';
 import '../config/app_colors.dart';
 
-// [SocialImageGrid SE MANTIENE IGUAL, NO ES NECESARIO CAMBIARLO]
-// ... (Copia la clase SocialImageGrid del código anterior aquí) ...
+// =============================================================================
+// 1. GRID DE IMÁGENES (Estilo Red Social)
+// =============================================================================
 class SocialImageGrid extends StatelessWidget {
   final List<String> imageUrls;
 
@@ -20,8 +21,8 @@ class SocialImageGrid extends StatelessWidget {
       margin: const EdgeInsets.only(top: 12),
       height: 200,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       clipBehavior: Clip.antiAlias,
       child: _buildGrid(displayImages, imageUrls.length),
@@ -32,18 +33,39 @@ class SocialImageGrid extends StatelessWidget {
     if (images.length == 1) {
       return _buildImage(images[0], isFull: true);
     } else if (images.length == 2) {
-      return Row(children: [Expanded(child: _buildImage(images[0])), const SizedBox(width: 2), Expanded(child: _buildImage(images[1]))]);
+      return Row(children: [
+        Expanded(child: _buildImage(images[0])),
+        const SizedBox(width: 2),
+        Expanded(child: _buildImage(images[1]))
+      ]);
     } else if (images.length == 3) {
       return Row(children: [
         Expanded(child: _buildImage(images[0], isFull: true)),
         const SizedBox(width: 2),
-        Expanded(child: Column(children: [Expanded(child: _buildImage(images[1])), const SizedBox(height: 2), Expanded(child: _buildImage(images[2]))]))
+        Expanded(
+            child: Column(children: [
+          Expanded(child: _buildImage(images[1])),
+          const SizedBox(height: 2),
+          Expanded(child: _buildImage(images[2]))
+        ]))
       ]);
     } else {
       return Column(children: [
-        Expanded(child: Row(children: [Expanded(child: _buildImage(images[0])), const SizedBox(width: 2), Expanded(child: _buildImage(images[1]))])),
+        Expanded(
+            child: Row(children: [
+          Expanded(child: _buildImage(images[0])),
+          const SizedBox(width: 2),
+          Expanded(child: _buildImage(images[1]))
+        ])),
         const SizedBox(height: 2),
-        Expanded(child: Row(children: [Expanded(child: _buildImage(images[2])), const SizedBox(width: 2), Expanded(child: _buildImage(images[3], remaining: totalCount > 4 ? totalCount - 4 : 0))]))
+        Expanded(
+            child: Row(children: [
+          Expanded(child: _buildImage(images[2])),
+          const SizedBox(width: 2),
+          Expanded(
+              child: _buildImage(images[3],
+                  remaining: totalCount > 4 ? totalCount - 4 : 0))
+        ]))
       ]);
     }
   }
@@ -53,25 +75,37 @@ class SocialImageGrid extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Image.network(
-          url, fit: BoxFit.cover,
-          loadingBuilder: (ctx, child, prog) => prog == null ? child : Container(color: Colors.grey[900]),
-          errorBuilder: (ctx, err, stack) => Container(color: Colors.grey[850], child: const Icon(Icons.broken_image, color: Colors.grey)),
+          url,
+          fit: BoxFit.cover,
+          loadingBuilder: (ctx, child, prog) =>
+              prog == null ? child : Container(color: Colors.grey[900]),
+          errorBuilder: (ctx, err, stack) => Container(
+              color: Colors.grey[850],
+              child: const Icon(Icons.broken_image, color: Colors.grey)),
         ),
-        if (remaining > 0) Container(color: Colors.black54, child: Center(child: Text('+$remaining', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)))),
+        if (remaining > 0)
+          Container(
+              color: Colors.black54,
+              child: Center(
+                  child: Text('+$remaining',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold)))),
       ],
     );
   }
 }
 
 // =============================================================================
-// 2. WIDGET BASE: TARJETA SOCIAL MEJORADA (Más Info)
+// 2. WIDGET BASE: TARJETA SOCIAL PRO (Diseño Unificado)
 // =============================================================================
 class _SocialFeedCard extends StatelessWidget {
   final String avatarLetter;
   final String authorName;
   final String date;
-  final String projectName; // NUEVO: Campo explícito para el proyecto
-  final String reportTitle; // NUEVO: Campo explícito para el título del reporte
+  final String projectName;
+  final String reportTitle;
   final String description;
   final List<String> images;
   final bool isLocal;
@@ -98,93 +132,115 @@ class _SocialFeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Color para el chip del proyecto (Turquesa/Secundario para destacar)
+    final projectColor = AppColors.secondary;
+
     return InkWell(
       onTap: onTap,
+      // Eliminamos bordes redondeados externos para full look de Feed continuo
       child: Container(
-        padding: const EdgeInsets.all(16), // Un poco más de padding general
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: AppColors.borderDark.withOpacity(0.5), width: 0.5),
+            bottom: BorderSide(
+                color: AppColors.borderDark.withOpacity(0.4), width: 1),
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- AVATAR ---
+            // --- AVATAR (Columna Izquierda) ---
             CircleAvatar(
-              radius: 22,
-              backgroundColor: isLocal ? AppColors.primary.withOpacity(0.2) : Colors.blueGrey.withOpacity(0.2),
+              radius: 20,
+              backgroundColor: isLocal
+                  ? AppColors.primary.withOpacity(0.2)
+                  : Colors.white10,
               child: Text(
                 avatarLetter,
                 style: TextStyle(
-                  color: isLocal ? AppColors.primary : Colors.white,
-                  fontWeight: FontWeight.bold,
+                  color: isLocal ? AppColors.primary : Colors.white70,
+                  fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),
               ),
             ),
             const SizedBox(width: 12),
 
-            // --- CONTENIDO ---
+            // --- CONTENIDO (Columna Derecha) ---
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. METADATA SUPERIOR: Autor y Fecha
+                  // 1. HEADER: Autor · Fecha · Badge Borrador
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
                       Flexible(
-                        child: RichText(
-                          overflow: TextOverflow.ellipsis,
-                          text: TextSpan(
-                            style: const TextStyle(fontSize: 15, color: Colors.white),
-                            children: [
-                              TextSpan(
-                                text: authorName,
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                              TextSpan(
-                                text: ' · $date',
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                              ),
-                            ],
+                        child: Text(
+                          authorName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (isLocal)
+                      const SizedBox(width: 6),
+                      Text(
+                        '· $date',
+                        style:
+                            TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                      if (isLocal) ...[
+                        const Spacer(),
                         Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                            border: Border.all(
+                                color: AppColors.primary.withOpacity(0.3),
+                                width: 0.5),
                           ),
-                          child: const Text(
-                            "Borrador",
-                            style: TextStyle(fontSize: 10, color: AppColors.primary),
-                          ),
+                          child: const Text("Borrador",
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold)),
                         ),
+                      ]
                     ],
                   ),
 
                   const SizedBox(height: 6),
 
-                  // 2. CONTEXTO: Nombre del Proyecto (Badge estilo etiqueta)
+                  // 2. CHIP DE PROYECTO (Contexto profesional)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: projectColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: projectColor.withOpacity(0.3), width: 0.5),
+                    ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.folder_open_rounded, size: 14, color: AppColors.secondary),
-                        const SizedBox(width: 6),
-                        Expanded(
+                        Icon(Icons.folder_outlined,
+                            size: 12, color: projectColor),
+                        const SizedBox(width: 5),
+                        Flexible(
                           child: Text(
-                            projectName,
+                            projectName.toUpperCase(),
                             style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 10,
+                              color: projectColor,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -194,40 +250,40 @@ class _SocialFeedCard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
 
-                  // 3. TÍTULO DEL REPORTE (Bien definido)
+                  // 3. TÍTULO DEL REPORTE
                   Text(
                     reportTitle,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white, // Título en blanco brillante
-                      height: 1.2,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      height: 1.3,
                     ),
                   ),
 
-                  // 4. DESCRIPCIÓN (Si existe)
+                  // 4. DESCRIPCIÓN CORTA
                   if (description.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       _stripHtml(description),
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade400, // Descripción un poco más apagada
+                        color: Colors.grey[400],
                         height: 1.4,
                       ),
-                      maxLines: 4,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
 
-                  // 5. MEDIA
+                  // 5. GRID DE IMÁGENES (Si existen)
                   SocialImageGrid(imageUrls: images),
 
-                  // 6. ACCIONES (Footer)
+                  // 6. BOTONES DE ACCIÓN
                   if (actionButtons != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     actionButtons!,
                   ],
                 ],
@@ -241,44 +297,45 @@ class _SocialFeedCard extends StatelessWidget {
 }
 
 // =============================================================================
-// 3. IMPLEMENTACIÓN: TARJETA DE SERVIDOR
+// 3. IMPLEMENTACIÓN: TARJETA SERVIDOR (NUBE)
 // =============================================================================
 class ServerReportCard extends StatelessWidget {
   final WorkReportData report;
   final VoidCallback onTap;
 
-  const ServerReportCard({super.key, required this.report, required this.onTap});
+  const ServerReportCard(
+      {super.key, required this.report, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    // Extraer imágenes
     List<String> extractImages() {
       final List<String> urls = [];
       if (report.photos != null) {
         for (var photo in report.photos!) {
-          if (photo.beforeWork?.photoUrl != null) urls.add(photo.beforeWork!.photoUrl!);
-          if (photo.afterWork?.photoUrl != null) urls.add(photo.afterWork!.photoUrl!);
+          if (photo.beforeWork?.photoUrl != null)
+            urls.add(photo.beforeWork!.photoUrl!);
+          if (photo.afterWork?.photoUrl != null)
+            urls.add(photo.afterWork!.photoUrl!);
         }
       }
       return urls;
     }
 
     return _SocialFeedCard(
-      avatarLetter: report.employee.fullName.isNotEmpty ? report.employee.fullName[0] : 'U',
-      authorName: report.employee.fullName, // Autor
-      date: _formatDate(report.reportDate), // Fecha formateada
-      projectName: report.project.name, // Proyecto (Contexto)
-      reportTitle: report.name, // Título del reporte (Destacado)
-      description: report.description ?? "", // Cuerpo
+      avatarLetter: report.employee.fullName.isNotEmpty
+          ? report.employee.fullName[0]
+          : 'U',
+      authorName: report.employee.fullName,
+      date: _formatDate(report.reportDate),
+      projectName: report.project.name,
+      reportTitle: report.name,
+      description: report.description ?? "",
       images: extractImages(),
       isLocal: false,
       onTap: onTap,
       actionButtons: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Icono tipo "Comentario" o "Ver más" para indicar interacción
-          Icon(Icons.chat_bubble_outline, size: 18, color: AppColors.textSecondary),
-          Icon(Icons.share_outlined, size: 18, color: AppColors.textSecondary),
         ],
       ),
     );
@@ -287,9 +344,10 @@ class ServerReportCard extends StatelessWidget {
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-      // Formato: 18 nov 2025
-      return "${date.day} ${months[date.month - 1]} ${date.year}";
+      const months = [
+        'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+      ];
+      return "${date.day} ${months[date.month - 1]}";
     } catch (_) {
       return dateString;
     }
@@ -297,7 +355,7 @@ class ServerReportCard extends StatelessWidget {
 }
 
 // =============================================================================
-// 4. IMPLEMENTACIÓN: TARJETA LOCAL
+// 4. IMPLEMENTACIÓN: TARJETA LOCAL (BORRADOR)
 // =============================================================================
 class LocalReportCard extends StatelessWidget {
   final WorkReport report;
@@ -315,58 +373,98 @@ class LocalReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // NOTA: Aquí logramos que se vea idéntica a la de nube.
+    // Usamos "Tú" como autor y el ID del proyecto en el chip si no tenemos el nombre.
+    
     return _SocialFeedCard(
-      avatarLetter: 'T',
-      authorName: "Tú",
-      date: "${report.reportDate.day}/${report.reportDate.month}/${report.reportDate.year}",
-      projectName: "Proyecto ID: ${report.projectId}", // Info disponible en local
+      avatarLetter: 'T', // "T" de Tú (Usuario actual)
+      authorName: "Tu Reporte",
+      date: "${report.reportDate.day}/${report.reportDate.month}",
+      projectName: "PROYECTO #${report.projectId}", // Misma estética de Chip
       reportTitle: report.name,
       description: report.description,
-      images: const [], // Opcional: Manejo de archivos locales
+      images: const [], // Localmente pasamos vacío por ahora, mantiene el diseño limpio
       isLocal: true,
       onTap: onTap,
       actionButtons: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           _ActionButton(
-            icon: Icons.edit_outlined,
-            label: "Editar",
-            color: AppColors.primary,
-            onTap: onEdit,
-          ),
+              icon: Icons.edit_outlined,
+              label: "Editar",
+              color: AppColors.primary, // Azul/Primary para acción positiva
+              onTap: onEdit),
           const SizedBox(width: 16),
           _ActionButton(
-            icon: Icons.delete_outline,
-            label: "Borrar",
-            color: AppColors.error,
-            onTap: onDelete,
-          ),
+              icon: Icons.delete_outline,
+              label: "Borrar",
+              color: Colors.red.shade400, // Rojo suave para borrar
+              onTap: onDelete),
         ],
       ),
     );
   }
 }
 
-// Botón de acción pequeño con texto opcional
+// =============================================================================
+// 5. WIDGETS AUXILIARES
+// =============================================================================
+
+// Botón de acción con texto (Usado en Local para Editar/Borrar)
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String? label;
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionButton({required this.icon, this.label, required this.color, required this.onTap});
+  const _ActionButton(
+      {required this.icon,
+      this.label,
+      required this.color,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.all(6.0), // Área táctil cómoda
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            if (label != null) ...[
+              const SizedBox(width: 6),
+              Text(label!,
+                  style: TextStyle(
+                      fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Botón icono simple (Usado en Servidor para Like/Share)
+class _SocialIconButton extends StatelessWidget {
+  final IconData icon;
+  final String? count;
+
+  const _SocialIconButton({required this.icon, this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color),
-          if (label != null) ...[
+          Icon(icon, size: 18, color: Colors.grey[600]),
+          if (count != null) ...[
             const SizedBox(width: 4),
-            Text(label!, style: TextStyle(fontSize: 12, color: color)),
-          ],
+            Text(count!,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          ]
         ],
       ),
     );
