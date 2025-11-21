@@ -8,27 +8,6 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       // AppBar transparente y sticky simulado
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF101922).withOpacity(0.95),
-        elevation: 0,
-        titleSpacing: 20,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, size: 28),
-          onPressed: () {},
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.notifications, size: 28),
-              onPressed: () {},
-            ),
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
